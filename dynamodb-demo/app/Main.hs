@@ -120,7 +120,7 @@ doDeleteTableIfExists DBInfo{..} = do
 doPutItem :: DBInfo -> IO ()
 doPutItem DBInfo{..} = do
     let item = HashMap.fromList
-            [ ("counter_name", attributeValue & avS .~ Just "foo")
+            [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             , ("counter_value", attributeValue & avN .~ Just "1001")
             ]
     runResourceT . runAWST env . within region $ do
@@ -131,7 +131,7 @@ doPutItem DBInfo{..} = do
 doGetItem :: DBInfo -> IO ()
 doGetItem DBInfo{..} = do
     let key = HashMap.fromList
-            [ ("counter_name", attributeValue & avS .~ Just "foo")
+            [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             ]
     runResourceT . runAWST env . within region $ do
         reconfigure service $ do
