@@ -1,6 +1,6 @@
 # dynamodb-demo by Richard Cook
 
-Haskell application with main executable only built using Stack
+[AWS via Haskell (part 1): DynamoDB][blog-post]
 
 ## Set up local DynamoDB
 
@@ -42,5 +42,6 @@ stack test
 Released under [MIT License][licence]
 
 [aws-cli]: https://aws.amazon.com/cli/
+[blog-post]: http://blog.rcook.org/blog/2017/aws-via-haskell/
 [licence]: LICENSE
 [local-dynamodb]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
