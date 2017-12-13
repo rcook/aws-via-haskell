@@ -7,20 +7,42 @@
 module Main (main) where
 
 import           Control.Exception.Lens (handling)
-import           Control.Lens
+import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
-import           Control.Monad.IO.Class
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.AWS hiding (await)
-import qualified Data.HashMap.Strict as HashMap
+import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Monoid
+import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import qualified Data.Text as Text
+import qualified Data.Text as Text (pack)
 import qualified Data.Text.IO as Text
-import           Network.AWS (await)
+import           Network.AWS (Service, await)
 import           Network.AWS.DynamoDB
-import           Network.AWS.DynamoDB.GetItem (girsItem)
-import           System.IO
+    ( _ResourceInUseException
+    , _ResourceNotFoundException
+    , KeyType(..)
+    , ScalarAttributeType(..)
+    , attributeDefinition
+    , attributeValue
+    , avN
+    , avS
+    , createTable
+    , ctAttributeDefinitions
+    , deleteTable
+    , describeTable
+    , dynamoDB
+    , getItem
+    , giKey
+    , girsItem
+    , keySchemaElement
+    , piItem
+    , provisionedThroughput
+    , putItem
+    , tableExists
+    , tableNotExists
+    )
+import           System.IO (stdout)
 
 say :: MonadIO m => Text -> m ()
 say = liftIO . Text.putStrLn
