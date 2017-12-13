@@ -43,6 +43,7 @@ executable dynamodb-demo-app
   build-depends:                            amazonka
                                           , amazonka-dynamodb
                                           , base >= 4.7 && < 5
+                                          , bytestring
                                           , conduit
                                           , dynamodb-demo
                                           , lens

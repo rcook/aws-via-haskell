@@ -16,6 +16,7 @@ import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.AWS hiding (await)
+import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Monoid ((<>))
@@ -52,12 +53,38 @@ import           System.IO (stdout)
 say :: MonadIO m => Text -> m ()
 say = liftIO . Text.putStrLn
 
-data DynamoDBEnv = DynamoDBEnv
+type HostName = ByteString
+
+type Port = Int
+
+data LoggingState = LoggingEnabled | LoggingDisabled
+
+data ServiceType = AWS Region | Local HostName Port
+
+data DBInfo = DBInfo
     { env :: Env
     , service :: Service
     , region :: Region
     , tableName :: Text
     }
+
+getDBInfo :: LoggingState -> ServiceType -> IO DBInfo
+getDBInfo loggingState serviceType = do
+    env <- getEnv loggingState
+    let (service, region) = serviceRegion serviceType
+    return $ DBInfo env service region "table"
+    where
+        -- Standard discovery mechanism for credentials, log to standard output
+        getEnv LoggingEnabled = do
+            logger <- newLogger Debug stdout
+            newEnv Discover <&> set envLogger logger
+        -- Standard discovery mechanism for credentials, no logging
+        getEnv LoggingDisabled = newEnv Discover
+
+        -- Run against a DynamoDB instance running on AWS in specified region
+        serviceRegion (AWS region) = (dynamoDB, region)
+        -- Run against a local DynamoDB instance on a given host and port
+        serviceRegion (Local hostName port) = (setEndpoint False hostName port dynamoDB, NorthVirginia)
 
 -- Creates a table in DynamoDB and waits until table is in active state
 -- Demonstrates:
@@ -66,8 +93,8 @@ data DynamoDBEnv = DynamoDBEnv
 -- * How to handle exceptions in lenses
 -- * Basic use of amazonka-style lenses
 -- * How to wait on an asynchronous operation
-doCreateTableIfNotExists :: DynamoDBEnv -> IO ()
-doCreateTableIfNotExists DynamoDBEnv{..} = do
+doCreateTableIfNotExists :: DBInfo -> IO ()
+doCreateTableIfNotExists DBInfo{..} = do
     runResourceT . runAWST env . within region $ do
         reconfigure service $ do
             exists <- handling _ResourceInUseException (const (pure True)) $ do
@@ -80,8 +107,8 @@ doCreateTableIfNotExists DynamoDBEnv{..} = do
             when (not exists) (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
-doDeleteTableIfExists :: DynamoDBEnv -> IO ()
-doDeleteTableIfExists DynamoDBEnv{..} = do
+doDeleteTableIfExists :: DBInfo -> IO ()
+doDeleteTableIfExists DBInfo{..} = do
     runResourceT . runAWST env . within region $ do
         reconfigure service $ do
             exists <- handling _ResourceNotFoundException (const (pure False)) $ do
@@ -90,8 +117,8 @@ doDeleteTableIfExists DynamoDBEnv{..} = do
             when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
-doPutItem :: DynamoDBEnv -> IO ()
-doPutItem DynamoDBEnv{..} = do
+doPutItem :: DBInfo -> IO ()
+doPutItem DBInfo{..} = do
     let item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "foo")
             , ("counter_value", attributeValue & avN .~ Just "1001")
@@ -101,8 +128,8 @@ doPutItem DynamoDBEnv{..} = do
             void $ send $ putItem tableName & piItem .~ item
 
 -- Gets an item from the DynamoDB table
-doGetItem :: DynamoDBEnv -> IO ()
-doGetItem DynamoDBEnv{..} = do
+doGetItem :: DBInfo -> IO ()
+doGetItem DBInfo{..} = do
     let key = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "foo")
             ]
@@ -117,31 +144,19 @@ doGetItem DynamoDBEnv{..} = do
 
 main :: IO ()
 main = do
-    -- Environment that obtains credentials using the standard algorithm and provides no logging
-    --env <- newEnv Discover
-
-    -- Environment that obtains credentials using the standard algorithm and provides debug logging
-    env <- do
-        logger <- newLogger Debug stdout
-        newEnv Discover <&> set envLogger logger
-
-    -- Use this to run against a local DynamoDB instance
-    let service = setEndpoint False "localhost" 8000 dynamoDB
-    -- Use this to run against a DynamoDB instance running on AWS
-    --let db = dynamoDB
-
-    let dynamoDBEnv = DynamoDBEnv env service Ohio "BAR"
+    --env <- getDBInfo LoggingEnabled (AWS Ohio)
+    env <- getDBInfo LoggingDisabled (Local "localhost" 8000)
 
     putStrLn "DeleteTable"
-    doDeleteTableIfExists dynamoDBEnv
+    doDeleteTableIfExists env
 
     putStrLn "CreateTable"
-    doCreateTableIfNotExists dynamoDBEnv
+    doCreateTableIfNotExists env
 
     putStrLn "PutItem"
-    doPutItem dynamoDBEnv
+    doPutItem env
 
     putStrLn "GetItem"
-    doGetItem dynamoDBEnv
+    doGetItem env
 
     putStrLn "Done"
