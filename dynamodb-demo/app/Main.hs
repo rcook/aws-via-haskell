@@ -20,6 +20,7 @@ import qualified Data.Text.IO as Text
 import           Network.AWS (await)
 import           Network.AWS.DynamoDB
 import           Network.AWS.DynamoDB.GetItem (girsItem)
+import           System.IO
 
 say :: MonadIO m => Text -> m ()
 say = liftIO . Text.putStrLn
@@ -30,20 +31,9 @@ defaultRegion = Ohio
 tableName :: Text
 tableName = "BAR"
 
-{-
-getDefaultEnv :: IO Env
-getDefaultEnv = do
-    logger <- newLogger Debug stdout
-    newEnv Discover <&> set envLogger logger
--}
-getDefaultEnv :: IO Env
-getDefaultEnv = newEnv Discover
-
 -- Creates a table in DynamoDB and waits until table is in active state
-doCreateTableIfNotExists :: IO ()
-doCreateTableIfNotExists = do
-    env <- getDefaultEnv
-    let db = setEndpoint False "localhost" 8000 dynamoDB
+doCreateTableIfNotExists :: Env -> Service -> IO ()
+doCreateTableIfNotExists env db = do
     runResourceT . runAWST env . within defaultRegion $ do
         reconfigure db $ do
             exists <- handling _ResourceInUseException (const (pure True)) $ do
@@ -56,10 +46,8 @@ doCreateTableIfNotExists = do
             when (not exists) (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
-doDeleteTableIfExists :: IO ()
-doDeleteTableIfExists = do
-    env <- getDefaultEnv
-    let db = setEndpoint False "localhost" 8000 dynamoDB
+doDeleteTableIfExists :: Env -> Service -> IO ()
+doDeleteTableIfExists env db = do
     runResourceT . runAWST env . within defaultRegion $ do
         reconfigure db $ do
             exists <- handling _ResourceNotFoundException (const (pure False)) $ do
@@ -68,26 +56,22 @@ doDeleteTableIfExists = do
             when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
-doPutItem :: IO ()
-doPutItem = do
+doPutItem :: Env -> Service -> IO ()
+doPutItem env db = do
     let item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "foo")
             , ("counter_value", attributeValue & avN .~ Just "1001")
             ]
-    env <- getDefaultEnv
-    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
         reconfigure db $ do
             void $ send $ putItem tableName & piItem .~ item
 
 -- Gets an item from the DynamoDB table
-doGetItem :: IO ()
-doGetItem = do
+doGetItem :: Env -> Service -> IO ()
+doGetItem env db = do
     let key = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "foo")
             ]
-    env <- getDefaultEnv
-    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
         reconfigure db $ do
             result <- send $ getItem tableName & giKey .~ key
@@ -99,16 +83,29 @@ doGetItem = do
 
 main :: IO ()
 main = do
+    -- Environment that obtains credentials using the standard algorithm and provides no logging
+    --env <- newEnv Discover
+
+    -- Environment that obtains credentials using the standard algorithm and provides debug logging
+    env <- do
+        logger <- newLogger Debug stdout
+        newEnv Discover <&> set envLogger logger
+
+    -- Use this to run against a local DynamoDB instance
+    let db = setEndpoint False "localhost" 8000 dynamoDB
+    -- Use this to run against a DynamoDB instance running on AWS
+    --let db = dynamoDB
+
     putStrLn "DeleteTable"
-    doDeleteTableIfExists
+    doDeleteTableIfExists env db
 
     putStrLn "CreateTable"
-    doCreateTableIfNotExists
+    doCreateTableIfNotExists env db
 
     putStrLn "PutItem"
-    doPutItem
+    doPutItem env db
 
     putStrLn "GetItem"
-    doGetItem
+    doGetItem env db
 
     putStrLn "Done"
