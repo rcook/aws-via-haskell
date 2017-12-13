@@ -54,6 +54,12 @@ tableName :: Text
 tableName = "BAR"
 
 -- Creates a table in DynamoDB and waits until table is in active state
+-- Demonstrates:
+-- * Use of runResourceT, runAWST
+-- * Use of reconfigure
+-- * How to handle exceptions in lenses
+-- * Basic use of amazonka-style lenses
+-- * How to wait on an asynchronous operation
 doCreateTableIfNotExists :: Env -> Service -> IO ()
 doCreateTableIfNotExists env db = do
     runResourceT . runAWST env . within defaultRegion $ do
@@ -63,7 +69,7 @@ doCreateTableIfNotExists env db = do
                     tableName
                     (keySchemaElement "counter_name" Hash :| [])
                     (provisionedThroughput 5 5)
-                    & ctAttributeDefinitions .~ [attributeDefinition "counter_name" S]
+                    & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
                 return False
             when (not exists) (void $ await tableExists (describeTable tableName))
 
