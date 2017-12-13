@@ -19,29 +19,29 @@ import qualified Data.Text as Text (pack)
 import qualified Data.Text.IO as Text
 import           Network.AWS (Service, await)
 import           Network.AWS.DynamoDB
-    ( _ResourceInUseException
-    , _ResourceNotFoundException
-    , KeyType(..)
-    , ScalarAttributeType(..)
-    , attributeDefinition
-    , attributeValue
-    , avN
-    , avS
-    , createTable
-    , ctAttributeDefinitions
-    , deleteTable
-    , describeTable
-    , dynamoDB
-    , getItem
-    , giKey
-    , girsItem
-    , keySchemaElement
-    , piItem
-    , provisionedThroughput
-    , putItem
-    , tableExists
-    , tableNotExists
-    )
+                    ( _ResourceInUseException
+                    , _ResourceNotFoundException
+                    , KeyType(..)
+                    , ScalarAttributeType(..)
+                    , attributeDefinition
+                    , attributeValue
+                    , avN
+                    , avS
+                    , createTable
+                    , ctAttributeDefinitions
+                    , deleteTable
+                    , describeTable
+                    , dynamoDB
+                    , getItem
+                    , giKey
+                    , girsItem
+                    , keySchemaElement
+                    , piItem
+                    , provisionedThroughput
+                    , putItem
+                    , tableExists
+                    , tableNotExists
+                    )
 import           System.IO (stdout)
 
 say :: MonadIO m => Text -> m ()
