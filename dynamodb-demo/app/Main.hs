@@ -11,15 +11,12 @@ import           Control.Lens
 import           Control.Monad (void, when)
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.AWS hiding (await)
-import           Data.Conduit hiding (await)
-import qualified Data.Conduit.List       as CL
-import           Data.HashMap.Strict     (HashMap)
-import qualified Data.HashMap.Strict     as HashMap
+import qualified Data.HashMap.Strict as HashMap
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Monoid
-import           Data.Text               (Text)
-import qualified Data.Text               as Text
-import qualified Data.Text.IO            as Text
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import           Network.AWS (await)
 import           Network.AWS.DynamoDB
 import           Network.AWS.DynamoDB.GetItem (girsItem)
