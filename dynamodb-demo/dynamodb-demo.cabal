@@ -44,7 +44,6 @@ executable dynamodb-demo-app
                                           , amazonka-dynamodb
                                           , base >= 4.7 && < 5
                                           , bytestring
-                                          , conduit
                                           , dynamodb-demo
                                           , lens
                                           , text
