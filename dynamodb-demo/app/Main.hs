@@ -21,10 +21,8 @@ import           Data.Text               (Text)
 import qualified Data.Text               as Text
 import qualified Data.Text.IO            as Text
 import           Network.AWS (await)
-import           Network.AWS.Data
 import           Network.AWS.DynamoDB
 import           Network.AWS.DynamoDB.GetItem (girsItem)
-import           System.IO
 
 say :: MonadIO m => Text -> m ()
 say = liftIO . Text.putStrLn
@@ -48,25 +46,29 @@ getDefaultEnv = newEnv Discover
 doCreateTableIfNotExists :: IO ()
 doCreateTableIfNotExists = do
     env <- getDefaultEnv
+    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
-        exists <- handling _ResourceInUseException (const (pure True)) $ do
-            void $ send $ createTable
-                tableName
-                (keySchemaElement "counter_name" Hash :| [])
-                (provisionedThroughput 5 5)
-                & ctAttributeDefinitions .~ [attributeDefinition "counter_name" S]
-            return False
-        when (not exists) (void $ await tableExists (describeTable tableName))
+        reconfigure db $ do
+            exists <- handling _ResourceInUseException (const (pure True)) $ do
+                void $ send $ createTable
+                    tableName
+                    (keySchemaElement "counter_name" Hash :| [])
+                    (provisionedThroughput 5 5)
+                    & ctAttributeDefinitions .~ [attributeDefinition "counter_name" S]
+                return False
+            when (not exists) (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: IO ()
 doDeleteTableIfExists = do
     env <- getDefaultEnv
+    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
-        exists <- handling _ResourceNotFoundException (const (pure False)) $ do
-            void $ send $ deleteTable tableName
-            return True
-        when exists (void $ await tableNotExists (describeTable tableName))
+        reconfigure db $ do
+            exists <- handling _ResourceNotFoundException (const (pure False)) $ do
+                void $ send $ deleteTable tableName
+                return True
+            when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
 doPutItem :: IO ()
@@ -76,8 +78,10 @@ doPutItem = do
             , ("counter_value", attributeValue & avN .~ Just "1001")
             ]
     env <- getDefaultEnv
+    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
-        void $ send $ putItem tableName & piItem .~ item
+        reconfigure db $ do
+            void $ send $ putItem tableName & piItem .~ item
 
 -- Gets an item from the DynamoDB table
 doGetItem :: IO ()
@@ -86,24 +90,26 @@ doGetItem = do
             [ ("counter_name", attributeValue & avS .~ Just "foo")
             ]
     env <- getDefaultEnv
+    let db = setEndpoint False "localhost" 8000 dynamoDB
     runResourceT . runAWST env . within defaultRegion $ do
-        result <- send $ getItem tableName & giKey .~ key
-        void $ case HashMap.lookup "counter_value" (result ^. girsItem) of
-            Nothing -> say "No counter_value field"
-            Just value -> case value ^. avN of
-                        Nothing -> say "Invalid counter_value"
-                        Just valueN -> say $ "Value: " <> (Text.pack $ show valueN)
+        reconfigure db $ do
+            result <- send $ getItem tableName & giKey .~ key
+            void $ case HashMap.lookup "counter_value" (result ^. girsItem) of
+                Nothing -> say "No counter_value field"
+                Just value -> case value ^. avN of
+                            Nothing -> say "Invalid counter_value"
+                            Just valueN -> say $ "Value: " <> (Text.pack $ show valueN)
 
 main :: IO ()
 main = do
-    --putStrLn "DeleteTable"
-    --doDeleteTableIfExists
+    putStrLn "DeleteTable"
+    doDeleteTableIfExists
 
-    --putStrLn "CreateTable"
-    --doCreateTableIfNotExists
+    putStrLn "CreateTable"
+    doCreateTableIfNotExists
 
-    --putStrLn "PutItem"
-    --doPutItem
+    putStrLn "PutItem"
+    doPutItem
 
     putStrLn "GetItem"
     doGetItem
