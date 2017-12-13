@@ -14,15 +14,13 @@ module Main (main) where
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.AWS hiding (await)
 import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
-import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import qualified Data.Text as Text (pack)
-import qualified Data.Text.IO as Text
+import qualified Data.Text as Text (null, pack)
+import           Data.Text.Read (decimal)
 import           Network.AWS (Service, await)
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
@@ -50,9 +48,6 @@ import           Network.AWS.DynamoDB
                     )
 import           System.IO (stdout)
 
-say :: MonadIO m => Text -> m ()
-say = liftIO . Text.putStrLn
-
 type HostName = ByteString
 
 type Port = Int
@@ -67,6 +62,14 @@ data DBInfo = DBInfo
     , region :: Region
     , tableName :: Text
     }
+
+intToText :: Int -> Text
+intToText = Text.pack . show
+
+parseInt :: Text -> Maybe Int
+parseInt s = case decimal s of
+    Left _ -> Nothing
+    Right (result, s') -> if Text.null s' then Just result else Nothing
 
 getDBInfo :: LoggingState -> ServiceType -> IO DBInfo
 getDBInfo loggingState serviceType = do
@@ -117,18 +120,18 @@ doDeleteTableIfExists DBInfo{..} = do
             when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
-doPutItem :: DBInfo -> IO ()
-doPutItem DBInfo{..} = do
+doPutItem :: DBInfo -> Int -> IO ()
+doPutItem DBInfo{..} value = do
     let item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
-            , ("counter_value", attributeValue & avN .~ Just "1001")
+            , ("counter_value", attributeValue & avN .~ Just (intToText value))
             ]
     runResourceT . runAWST env . within region $ do
         reconfigure service $ do
             void $ send $ putItem tableName & piItem .~ item
 
 -- Gets an item from the DynamoDB table
-doGetItem :: DBInfo -> IO ()
+doGetItem :: DBInfo -> IO (Maybe Int)
 doGetItem DBInfo{..} = do
     let key = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
@@ -136,11 +139,10 @@ doGetItem DBInfo{..} = do
     runResourceT . runAWST env . within region $ do
         reconfigure service $ do
             result <- send $ getItem tableName & giKey .~ key
-            void $ case HashMap.lookup "counter_value" (result ^. girsItem) of
-                Nothing -> say "No counter_value field"
-                Just value -> case value ^. avN of
-                            Nothing -> say "Invalid counter_value"
-                            Just valueN -> say $ "Value: " <> (Text.pack $ show valueN)
+            return $ do
+                valueAttr <- HashMap.lookup "counter_value" (result ^. girsItem)
+                valueNStr <- valueAttr ^. avN
+                parseInt valueNStr
 
 main :: IO ()
 main = do
@@ -154,9 +156,10 @@ main = do
     doCreateTableIfNotExists env
 
     putStrLn "PutItem"
-    doPutItem env
+    doPutItem env 1234
 
     putStrLn "GetItem"
-    doGetItem env
+    counter <- doGetItem env
+    print counter
 
     putStrLn "Done"
