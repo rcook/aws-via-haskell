@@ -16,19 +16,6 @@ source-repository head
   type:                                     git
   location:                                 https://github.com/rcook/dynamodb-demo.git
 
-library
-  default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
-  hs-source-dirs:                           lib
-  ghc-options:                              -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            base >= 4.7 && < 5
-  exposed-modules:                          DynamoDBDemo
-
 executable dynamodb-demo-app
   default-language:                         Haskell2010
   if os(darwin)
@@ -44,25 +31,7 @@ executable dynamodb-demo-app
                                           , amazonka-dynamodb
                                           , base >= 4.7 && < 5
                                           , bytestring
-                                          , dynamodb-demo
                                           , lens
                                           , resourcet
                                           , text
                                           , unordered-containers
-
-test-suite dynamodb-demo-test
-  type:                                     exitcode-stdio-1.0
-  default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
-  hs-source-dirs:                           test
-  main-is:                                  Spec.hs
-  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  other-modules:                            DynamoDBDemoSpec
-  build-depends:                            base >= 4.7 && < 5
-                                          , dynamodb-demo
-
