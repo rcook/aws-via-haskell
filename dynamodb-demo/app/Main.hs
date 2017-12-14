@@ -64,6 +64,10 @@ import           Network.AWS.DynamoDB
                     , putItem
                     , tableExists
                     , tableNotExists
+                    , uiExpressionAttributeValues
+                    , uiKey
+                    , uiUpdateExpression
+                    , updateItem
                     )
 import           System.IO (stdout)
 
@@ -147,16 +151,33 @@ doDeleteTableIfExists DBInfo{..} = withDynamoDB env service region $ do
 -- Puts an item into the DynamoDB table
 doPutItem :: DBInfo -> Int -> IO ()
 doPutItem DBInfo{..} value = withDynamoDB env service region $ do
-    void $ send $ putItem tableName & piItem .~ item
+    void $ send $ putItem tableName
+        & piItem .~ item
     where item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             , ("counter_value", attributeValue & avN .~ Just (intToText value))
             ]
 
+-- Updates an item in the DynamoDB table
+doUpdateItem :: DBInfo -> IO ()
+doUpdateItem DBInfo{..} = withDynamoDB env service region $ do
+    void $ send $ updateItem tableName
+        & uiKey .~ key
+        & uiUpdateExpression .~ Just "ADD counter_value :increment"
+        & uiExpressionAttributeValues .~ exprAttrValues
+    where
+        key = HashMap.fromList
+            [ ("counter_name", attributeValue & avS .~ Just "my-counter")
+            ]
+        exprAttrValues = HashMap.fromList
+            [ (":increment", attributeValue & avN .~ Just "1" )
+            ]
+
 -- Gets an item from the DynamoDB table
 doGetItem :: DBInfo -> IO (Maybe Int)
 doGetItem DBInfo{..} = withDynamoDB env service region $ do
-    result <- send $ getItem tableName & giKey .~ key
+    result <- send $ getItem tableName
+        & giKey .~ key
     return $ do
         valueAttr <- HashMap.lookup "counter_value" (result ^. girsItem)
         valueNStr <- valueAttr ^. avN
@@ -178,6 +199,9 @@ main = do
 
     putStrLn "PutItem"
     doPutItem db 1234
+
+    putStrLn "UpdateItem"
+    doUpdateItem db
 
     putStrLn "GetItem"
     counter <- doGetItem db
