@@ -7,7 +7,7 @@
 -- All of amazonka APIs use Data.Text.Text by default which is nice
 {-# LANGUAGE OverloadedStrings #-}
 
--- Allows record fields to expanded automatically
+-- Allows record fields to be expanded automatically
 {-# LANGUAGE RecordWildCards #-}
 
 module Main (main) where
