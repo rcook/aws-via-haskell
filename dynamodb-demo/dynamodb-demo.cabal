@@ -1,7 +1,6 @@
-
 name:                                       dynamodb-demo
 version:                                    0.1.0.0
-homepage:                                   https://github.com/rcook/dynamodb-demo#readme
+homepage:                                   https://github.com/rcook/aws-via-haskell
 license:                                    MIT
 license-file:                               LICENSE
 author:                                     Richard Cook
@@ -14,7 +13,7 @@ extra-source-files:                         README.md
 
 source-repository head
   type:                                     git
-  location:                                 https://github.com/rcook/dynamodb-demo.git
+  location:                                 https://github.com/rcook/aws-via-haskell.git
 
 executable dynamodb-demo-app
   default-language:                         Haskell2010
