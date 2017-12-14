@@ -2,6 +2,8 @@
 -- Copyright (C) 2017, All rights reserved.
 --------------------------------------------------
 
+{-# LANGUAGE FlexibleContexts #-}
+
 -- All of amazonka APIs use Data.Text.Text by default which is nice
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -15,6 +17,7 @@ import           Control.Exception.Lens (handling)
 import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.AWS hiding (await)
+import           Control.Monad.Trans.Resource (MonadBaseControl, ResourceT)
 import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
@@ -89,6 +92,16 @@ getDBInfo loggingState serviceType = do
         -- Run against a local DynamoDB instance on a given host and port
         serviceRegion (Local hostName port) = (setEndpoint False hostName port dynamoDB, NorthVirginia)
 
+withDynamoDB :: (HasEnv r, MonadBaseControl IO m) =>
+    r
+    -> Service
+    -> Region
+    -> AWST' r (ResourceT m) a
+    -> m a
+withDynamoDB env service region action =
+    runResourceT . runAWST env . within region $ do
+        reconfigure service action
+
 -- Creates a table in DynamoDB and waits until table is in active state
 -- Demonstrates:
 -- * Use of runResourceT, runAWST
@@ -97,69 +110,61 @@ getDBInfo loggingState serviceType = do
 -- * Basic use of amazonka-style lenses
 -- * How to wait on an asynchronous operation
 doCreateTableIfNotExists :: DBInfo -> IO ()
-doCreateTableIfNotExists DBInfo{..} = do
-    runResourceT . runAWST env . within region $ do
-        reconfigure service $ do
-            exists <- handling _ResourceInUseException (const (pure True)) $ do
-                void $ send $ createTable
-                    tableName
-                    (keySchemaElement "counter_name" Hash :| [])
-                    (provisionedThroughput 5 5)
-                    & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
-                return False
-            when (not exists) (void $ await tableExists (describeTable tableName))
+doCreateTableIfNotExists DBInfo{..} = withDynamoDB env service region $ do
+    exists <- handling _ResourceInUseException (const (pure True)) $ do
+        void $ send $ createTable
+            tableName
+            (keySchemaElement "counter_name" Hash :| [])
+            (provisionedThroughput 5 5)
+            & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
+        return False
+    when (not exists) (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: DBInfo -> IO ()
-doDeleteTableIfExists DBInfo{..} = do
-    runResourceT . runAWST env . within region $ do
-        reconfigure service $ do
-            exists <- handling _ResourceNotFoundException (const (pure False)) $ do
-                void $ send $ deleteTable tableName
-                return True
-            when exists (void $ await tableNotExists (describeTable tableName))
+doDeleteTableIfExists DBInfo{..} = withDynamoDB env service region $ do
+    exists <- handling _ResourceNotFoundException (const (pure False)) $ do
+        void $ send $ deleteTable tableName
+        return True
+    when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
 doPutItem :: DBInfo -> Int -> IO ()
-doPutItem DBInfo{..} value = do
-    let item = HashMap.fromList
+doPutItem DBInfo{..} value = withDynamoDB env service region $ do
+    void $ send $ putItem tableName & piItem .~ item
+    where item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             , ("counter_value", attributeValue & avN .~ Just (intToText value))
             ]
-    runResourceT . runAWST env . within region $ do
-        reconfigure service $ do
-            void $ send $ putItem tableName & piItem .~ item
 
 -- Gets an item from the DynamoDB table
 doGetItem :: DBInfo -> IO (Maybe Int)
-doGetItem DBInfo{..} = do
-    let key = HashMap.fromList
+doGetItem DBInfo{..} = withDynamoDB env service region $ do
+    result <- send $ getItem tableName & giKey .~ key
+    return $ do
+        valueAttr <- HashMap.lookup "counter_value" (result ^. girsItem)
+        valueNStr <- valueAttr ^. avN
+        parseInt valueNStr
+    where key = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             ]
-    runResourceT . runAWST env . within region $ do
-        reconfigure service $ do
-            result <- send $ getItem tableName & giKey .~ key
-            return $ do
-                valueAttr <- HashMap.lookup "counter_value" (result ^. girsItem)
-                valueNStr <- valueAttr ^. avN
-                parseInt valueNStr
 
 main :: IO ()
 main = do
-    --env <- getDBInfo LoggingEnabled (AWS Ohio)
-    env <- getDBInfo LoggingDisabled (Local "localhost" 8000)
+    --db <- getDBInfo LoggingEnabled (AWS Ohio)
+    db <- getDBInfo LoggingDisabled (Local "localhost" 8000)
 
     putStrLn "DeleteTable"
-    doDeleteTableIfExists env
+    doDeleteTableIfExists db
 
     putStrLn "CreateTable"
-    doCreateTableIfNotExists env
+    doCreateTableIfNotExists db
 
     putStrLn "PutItem"
-    doPutItem env 1234
+    doPutItem db 1234
 
     putStrLn "GetItem"
-    counter <- doGetItem env
+    counter <- doGetItem db
     print counter
 
     putStrLn "Done"

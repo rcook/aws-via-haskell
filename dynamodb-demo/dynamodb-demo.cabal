@@ -46,6 +46,7 @@ executable dynamodb-demo-app
                                           , bytestring
                                           , dynamodb-demo
                                           , lens
+                                          , resourcet
                                           , text
                                           , unordered-containers
 
