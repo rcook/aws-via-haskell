@@ -16,7 +16,23 @@ module Main (main) where
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
-import           Control.Monad.Trans.AWS hiding (await)
+import           Control.Monad.Trans.AWS
+                    ( AWST'
+                    , Credentials(..)
+                    , Env
+                    , HasEnv
+                    , LogLevel(..)
+                    , Region(..)
+                    , envLogger
+                    , newEnv
+                    , newLogger
+                    , reconfigure
+                    , runAWST
+                    , runResourceT
+                    , send
+                    , setEndpoint
+                    , within
+                    )
 import           Control.Monad.Trans.Resource (MonadBaseControl, ResourceT)
 import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
