@@ -1,0 +1,32 @@
+
+name:                                       s3-demo
+version:                                    0.1.0.0
+homepage:                                   https://github.com/rcook/aws-via-haskell#readme
+license:                                    MIT
+license-file:                               LICENSE
+author:                                     Richard Cook
+maintainer:                                 rcook@rcook.org
+copyright:                                  2017 Richard Cook
+category:                                   Command Line
+build-type:                                 Simple
+cabal-version:                              >= 1.10
+extra-source-files:                         README.md
+
+source-repository head
+  type:                                     git
+  location:                                 https://github.com/rcook/aws-via-haskell.git
+
+executable s3-demo-app
+  default-language:                         Haskell2010
+  if os(darwin)
+    cpp-options:                            -DOS_MACOS
+  if os(linux)
+    cpp-options:                            -DOS_LINUX
+  if os(windows)
+    cpp-options:                            -DOS_WINDOWS
+  hs-source-dirs:                           .
+  main-is:                                  Main.hs
+  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
+  build-depends:                            amazonka
+                                          , amazonka-s3
+                                          , base >= 4.7 && < 5
