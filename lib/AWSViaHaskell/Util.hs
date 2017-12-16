@@ -3,9 +3,10 @@
 --------------------------------------------------
 
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module AWSViaHaskell.Util
-    ( AWSInfo(..)
+    ( AWSInfo
     , LoggingState(..)
     , getAWSInfo
     , withAWS
@@ -16,7 +17,6 @@ import           Control.Monad.Trans.AWS
                     ( AWST'
                     , Credentials(..)
                     , Env
-                    , HasEnv
                     , LogLevel(..)
                     , Region(..)
                     , Service
@@ -34,17 +34,14 @@ import           Control.Monad.Trans.Resource
                     )
 import           System.IO (stdout)
 
--- This is DBInfo (more or less) from dynamodb-demo
 data AWSInfo = AWSInfo
     { env :: Env
     , region :: Region
     , service :: Service
     }
 
--- This is LoggingState from dynamodb-demo
 data LoggingState = LoggingEnabled | LoggingDisabled
 
--- This is getDBInfo (more of less) from dynamodb-demo
 getAWSInfo :: LoggingState -> Region -> Service -> IO AWSInfo
 getAWSInfo loggingState r s = do
     e <- getEnv loggingState
@@ -57,13 +54,10 @@ getAWSInfo loggingState r s = do
         -- Standard discovery mechanism for credentials, no logging
         getEnv LoggingDisabled = newEnv Discover
 
--- This is withDynamoDB from from dynamodb-demo
-withAWS :: (HasEnv r, MonadBaseControl IO m) =>
-    r
-    -> Service
-    -> Region
-    -> AWST' r (ResourceT m) a
+withAWS :: MonadBaseControl IO m =>
+    AWSInfo
+    -> AWST' Env (ResourceT m) a
     -> m a
-withAWS e s r action =
-    runResourceT . runAWST e . within r $ do
-        reconfigure s action
+withAWS AWSInfo{..} action =
+    runResourceT . runAWST env . within region $ do
+        reconfigure service action

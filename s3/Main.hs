@@ -17,11 +17,11 @@ import           Control.Monad.Trans.AWS
 import           Network.AWS.S3 (BucketName(..), createBucket, s3)
 
 doCreateBucket :: AWSInfo -> IO ()
-doCreateBucket AWSInfo{..} = withAWS env service region $ do
+doCreateBucket aws = withAWS aws $ do
     void $ send $ createBucket (BucketName "test-bucket")
 
 main :: IO ()
 main = do
-    awsInfo <- getAWSInfo LoggingEnabled Ohio s3
-    doCreateBucket awsInfo
+    aws <- getAWSInfo LoggingEnabled Ohio s3
+    doCreateBucket aws
     putStrLn "Hello from S3Demo.main"
