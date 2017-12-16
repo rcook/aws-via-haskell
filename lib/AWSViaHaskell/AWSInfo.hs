@@ -10,6 +10,7 @@ module AWSViaHaskell.AWSInfo
     , LoggingState(..)
     , getAWSInfo
     , withAWS
+    , withAWS'
     ) where
 
 import           Control.Lens ((<&>), set)
@@ -61,3 +62,9 @@ withAWS :: MonadBaseControl IO m =>
 withAWS AWSInfo{..} action =
     runResourceT . runAWST env . within region $ do
         reconfigure service action
+
+withAWS' :: MonadBaseControl IO m =>
+    AWST' Env (ResourceT m) a
+    -> AWSInfo
+    -> m a
+withAWS' = flip withAWS

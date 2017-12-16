@@ -10,18 +10,33 @@ module Main (main) where
 
 import           AWSViaHaskell
 import           Control.Monad (void)
-import           Control.Monad.Trans.AWS
+import           Network.AWS
                     ( Region(..)
                     , send
                     )
-import           Network.AWS.S3 (BucketName(..), createBucket, s3)
+import           Network.AWS.S3
+                    ( BucketName(..)
+                    , createBucket
+                    , listBuckets
+                    , s3
+                    )
+
+doListBuckets :: AWSInfo -> IO ()
+doListBuckets = withAWS' $ do
+    void $ send $ listBuckets
 
 doCreateBucket :: AWSInfo -> IO ()
-doCreateBucket aws = withAWS aws $ do
+doCreateBucket = withAWS' $ do
     void $ send $ createBucket (BucketName "test-bucket")
 
 main :: IO ()
 main = do
     aws <- getAWSInfo LoggingEnabled Ohio s3
+
+    putStrLn "ListBuckets"
+    doListBuckets aws
+
+    putStrLn "CreateBucket"
     doCreateBucket aws
+
     putStrLn "Hello from S3Demo.main"
