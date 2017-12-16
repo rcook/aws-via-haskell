@@ -3,7 +3,7 @@
 --------------------------------------------------
 
 module AWSViaHaskell
-    ( module AWSViaHaskell.Util
+    ( module AWSViaHaskell.AWSInfo
     ) where
 
-import           AWSViaHaskell.Util
+import           AWSViaHaskell.AWSInfo

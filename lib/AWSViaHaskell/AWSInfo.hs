@@ -5,7 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module AWSViaHaskell.Util
+module AWSViaHaskell.AWSInfo
     ( AWSInfo(..)
     , LoggingState(..)
     , getAWSInfo

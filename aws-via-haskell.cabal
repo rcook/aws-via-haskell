@@ -30,7 +30,7 @@ library
                                           , lens
                                           , resourcet
   exposed-modules:                          AWSViaHaskell
-                                          , AWSViaHaskell.Util
+                                          , AWSViaHaskell.AWSInfo
 
 executable dynamodb-app
   default-language:                         Haskell2010
