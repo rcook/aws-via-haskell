@@ -56,15 +56,15 @@ getAWSInfo loggingState r s = do
         getEnv LoggingDisabled = newEnv Discover
 
 withAWS :: MonadBaseControl IO m =>
-    AWSInfo
-    -> AWST' Env (ResourceT m) a
+    AWST' Env (ResourceT m) a
+    -> AWSInfo
     -> m a
-withAWS AWSInfo{..} action =
+withAWS action AWSInfo{..} =
     runResourceT . runAWST env . within region $ do
         reconfigure service action
 
 withAWS' :: MonadBaseControl IO m =>
-    AWST' Env (ResourceT m) a
-    -> AWSInfo
+    AWSInfo
+    -> AWST' Env (ResourceT m) a
     -> m a
 withAWS' = flip withAWS

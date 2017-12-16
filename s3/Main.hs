@@ -22,11 +22,11 @@ import           Network.AWS.S3
                     )
 
 doListBuckets :: AWSInfo -> IO ()
-doListBuckets = withAWS' $ do
+doListBuckets = withAWS $ do
     void $ send $ listBuckets
 
 doCreateBucket :: AWSInfo -> IO ()
-doCreateBucket = withAWS' $ do
+doCreateBucket = withAWS $ do
     void $ send $ createBucket (BucketName "test-bucket")
 
 main :: IO ()

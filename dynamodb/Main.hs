@@ -86,7 +86,7 @@ getDBInfo loggingState serviceType = do
 -- * Basic use of amazonka-style lenses
 -- * How to wait on an asynchronous operation
 doCreateTableIfNotExists :: DBInfo -> IO ()
-doCreateTableIfNotExists DBInfo{..} = withAWS aws $ do
+doCreateTableIfNotExists DBInfo{..} = withAWS' aws $ do
     exists <- handling _ResourceInUseException (const (pure True)) $ do
         void $ send $ createTable
             tableName
@@ -98,7 +98,7 @@ doCreateTableIfNotExists DBInfo{..} = withAWS aws $ do
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: DBInfo -> IO ()
-doDeleteTableIfExists DBInfo{..} = withAWS aws $ do
+doDeleteTableIfExists DBInfo{..} = withAWS' aws $ do
     exists <- handling _ResourceNotFoundException (const (pure False)) $ do
         void $ send $ deleteTable tableName
         return True
@@ -106,7 +106,7 @@ doDeleteTableIfExists DBInfo{..} = withAWS aws $ do
 
 -- Puts an item into the DynamoDB table
 doPutItem :: DBInfo -> Int -> IO ()
-doPutItem DBInfo{..} value = withAWS aws $ do
+doPutItem DBInfo{..} value = withAWS' aws $ do
     void $ send $ putItem tableName
         & piItem .~ item
     where item = HashMap.fromList
@@ -116,7 +116,7 @@ doPutItem DBInfo{..} value = withAWS aws $ do
 
 -- Updates an item in the DynamoDB table
 doUpdateItem :: DBInfo -> IO ()
-doUpdateItem DBInfo{..} = withAWS aws $ do
+doUpdateItem DBInfo{..} = withAWS' aws $ do
     void $ send $ updateItem tableName
         & uiKey .~ key
         & uiUpdateExpression .~ Just "ADD counter_value :increment"
@@ -131,7 +131,7 @@ doUpdateItem DBInfo{..} = withAWS aws $ do
 
 -- Gets an item from the DynamoDB table
 doGetItem :: DBInfo -> IO (Maybe Int)
-doGetItem DBInfo{..} = withAWS aws $ do
+doGetItem DBInfo{..} = withAWS' aws $ do
     result <- send $ getItem tableName
         & giKey .~ key
     return $ do
