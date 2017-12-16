@@ -94,22 +94,22 @@ getDynamoDBInfo loggingState serviceType = do
 -- * How to wait on an asynchronous operation
 doCreateTableIfNotExists :: DynamoDBInfo -> IO ()
 doCreateTableIfNotExists DynamoDBInfo{..} = withAWS' aws $ do
-    exists <- handling _ResourceInUseException (const (pure True)) $ do
+    newlyCreated <- handling _ResourceInUseException (const (pure False)) $ do
         void $ send $ createTable
                         tableName
                         (keySchemaElement "counter_name" Hash :| [])
                         (provisionedThroughput 5 5)
                         & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
-        return False
-    when (not exists) (void $ await tableExists (describeTable tableName))
+        return True
+    when newlyCreated (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: DynamoDBInfo -> IO ()
 doDeleteTableIfExists DynamoDBInfo{..} = withAWS' aws $ do
-    exists <- handling _ResourceNotFoundException (const (pure False)) $ do
+    deleted <- handling _ResourceNotFoundException (const (pure False)) $ do
         void $ send $ deleteTable tableName
         return True
-    when exists (void $ await tableNotExists (describeTable tableName))
+    when deleted (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
 doPutItem :: DynamoDBInfo -> Int -> IO ()
@@ -154,10 +154,10 @@ main = do
     --ddbInfo <- getDynamoDBInfo LoggingEnabled (AWS Ohio)
     ddbInfo <- getDynamoDBInfo LoggingDisabled (Local "localhost" 8000)
 
-    putStrLn "DeleteTable"
+    putStrLn "DeleteTableIfExists"
     doDeleteTableIfExists ddbInfo
 
-    putStrLn "CreateTable"
+    putStrLn "CreateTableIfNotExists"
     doCreateTableIfNotExists ddbInfo
 
     putStrLn "PutItem"
