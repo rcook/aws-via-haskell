@@ -9,7 +9,7 @@
 module Main (main) where
 
 import           AWSViaHaskell
-import           Control.Lens ((^.))
+import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
@@ -20,6 +20,10 @@ import           Network.AWS
 import           Network.AWS.Data (toText)
 import           Network.AWS.S3
                     ( BucketName(..)
+                    , LocationConstraint(..)
+                    , cbCreateBucketConfiguration
+                    , cbcLocationConstraint
+                    , createBucketConfiguration
                     , bName
                     , createBucket
                     , lbrsBuckets
@@ -27,23 +31,36 @@ import           Network.AWS.S3
                     , s3
                     )
 
-doListBuckets :: AWSInfo -> IO [BucketName]
-doListBuckets = withAWS $ do
+data S3Info = S3Info
+    { aws :: AWSInfo
+    , bucketName :: BucketName
+    }
+
+getS3Info :: LoggingState -> Region -> IO S3Info
+getS3Info loggingState region = do
+    aws <- getAWSInfo loggingState region s3
+    return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
+
+doListBuckets :: S3Info -> IO [BucketName]
+doListBuckets S3Info{..} = withAWS' aws $ do
     result <- send $ listBuckets
     return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
-doCreateBucket :: AWSInfo -> IO ()
-doCreateBucket = withAWS $ do
-    void $ send $ createBucket (BucketName "test-bucket")
+doCreateBucket :: S3Info -> IO ()
+doCreateBucket S3Info{..} = withAWS' aws $ do
+    let cbc = createBucketConfiguration
+                & cbcLocationConstraint .~ Just (LocationConstraint (region aws))
+    void $ send $ createBucket bucketName
+                    & cbCreateBucketConfiguration .~ Just cbc
 
 main :: IO ()
 main = do
-    aws <- getAWSInfo LoggingDisabled Ohio s3
+    s3Info <- getS3Info LoggingEnabled Ohio
+
+    putStrLn "CreateBucket"
+    doCreateBucket s3Info
 
     putStrLn "ListBuckets"
-    bucketNames <- doListBuckets aws
+    bucketNames <- doListBuckets s3Info
     forM_ bucketNames $
         \n -> Text.putStrLn $ "  " <> toText n
-
-    --putStrLn "CreateBucket"
-    --doCreateBucket aws
