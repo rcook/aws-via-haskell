@@ -9,23 +9,28 @@
 module Main (main) where
 
 import           AWSViaHaskell
+import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
-import           Control.Monad (forM_, void)
+import           Control.Monad (forM_, void, when)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
                     ( Region(..)
+                    , await
                     , send
                     )
 import           Network.AWS.Data (toText)
 import           Network.AWS.S3
-                    ( BucketName(..)
+                    ( _BucketAlreadyOwnedByYou
+                    , BucketName(..)
                     , LocationConstraint(..)
+                    , bucketExists
                     , cbCreateBucketConfiguration
                     , cbcLocationConstraint
                     , createBucketConfiguration
                     , bName
                     , createBucket
+                    , headBucket
                     , lbrsBuckets
                     , listBuckets
                     , s3
@@ -46,19 +51,22 @@ doListBuckets S3Info{..} = withAWS' aws $ do
     result <- send $ listBuckets
     return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
-doCreateBucket :: S3Info -> IO ()
-doCreateBucket S3Info{..} = withAWS' aws $ do
+doCreateBucketIfNotExists :: S3Info -> IO ()
+doCreateBucketIfNotExists S3Info{..} = withAWS' aws $ do
     let cbc = createBucketConfiguration
                 & cbcLocationConstraint .~ Just (LocationConstraint (region aws))
-    void $ send $ createBucket bucketName
-                    & cbCreateBucketConfiguration .~ Just cbc
+    newlyCreated <- handling _BucketAlreadyOwnedByYou (const (pure False)) $ do
+        void $ send $ createBucket bucketName
+                        & cbCreateBucketConfiguration .~ Just cbc
+        return True
+    when newlyCreated (void $ await bucketExists (headBucket bucketName))
 
 main :: IO ()
 main = do
-    s3Info <- getS3Info LoggingEnabled Ohio
+    s3Info <- getS3Info LoggingDisabled Ohio
 
     putStrLn "CreateBucket"
-    doCreateBucket s3Info
+    doCreateBucketIfNotExists s3Info
 
     putStrLn "ListBuckets"
     bucketNames <- doListBuckets s3Info
