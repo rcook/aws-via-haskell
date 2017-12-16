@@ -14,11 +14,6 @@ module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
-                    ( AWSInfo(..)
-                    , LoggingState(..)
-                    , getAWSInfo
-                    , withAWS
-                    )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
