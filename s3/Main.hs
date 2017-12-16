@@ -24,6 +24,7 @@ import           Network.AWS.S3
                     ( _BucketAlreadyOwnedByYou
                     , BucketName(..)
                     , LocationConstraint(..)
+                    , ObjectKey(..)
                     , bucketExists
                     , cbCreateBucketConfiguration
                     , cbcLocationConstraint
@@ -33,6 +34,10 @@ import           Network.AWS.S3
                     , headBucket
                     , lbrsBuckets
                     , listBuckets
+                    , listObjectsV
+                    , lrsContents
+                    , oKey
+                    , putObject
                     , s3
                     )
 
@@ -46,11 +51,6 @@ getS3Info loggingState region = do
     aws <- getAWSInfo loggingState region s3
     return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
 
-doListBuckets :: S3Info -> IO [BucketName]
-doListBuckets S3Info{..} = withAWS' aws $ do
-    result <- send $ listBuckets
-    return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
-
 doCreateBucketIfNotExists :: S3Info -> IO ()
 doCreateBucketIfNotExists S3Info{..} = withAWS' aws $ do
     let cbc = createBucketConfiguration
@@ -61,14 +61,39 @@ doCreateBucketIfNotExists S3Info{..} = withAWS' aws $ do
         return True
     when newlyCreated (void $ await bucketExists (headBucket bucketName))
 
+doListBuckets :: S3Info -> IO [BucketName]
+doListBuckets S3Info{..} = withAWS' aws $ do
+    result <- send $ listBuckets
+    return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
+
+doListObjects :: S3Info -> IO [ObjectKey]
+doListObjects S3Info{..} = withAWS' aws $ do
+    result <- send $ listObjectsV bucketName
+    return $ [ x ^. oKey | x <- result ^. lrsContents ]
+
+doPutObject :: S3Info -> IO ()
+doPutObject S3Info{..} = withAWS' aws $ do
+    void $ send $ putObject bucketName undefined undefined
+    return ()
+
 main :: IO ()
 main = do
     s3Info <- getS3Info LoggingDisabled Ohio
 
+    {-
     putStrLn "CreateBucket"
     doCreateBucketIfNotExists s3Info
 
     putStrLn "ListBuckets"
     bucketNames <- doListBuckets s3Info
-    forM_ bucketNames $
-        \n -> Text.putStrLn $ "  " <> toText n
+    forM_ bucketNames $ \n ->
+        Text.putStrLn $ "  " <> toText n
+    -}
+
+    putStrLn "ListObjects"
+    objectKeys <- doListObjects s3Info
+    forM_ objectKeys $ \k ->
+        Text.putStrLn $ "  " <> toText k
+
+    --putStrLn "PutObject"
+    --doPutObject s3Info
