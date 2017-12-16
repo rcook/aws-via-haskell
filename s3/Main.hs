@@ -18,6 +18,7 @@ import           Network.AWS
                     ( Region(..)
                     , await
                     , send
+                    , sinkBody
                     )
 import           Network.AWS.Data (toText)
 import           Network.AWS.S3
@@ -31,6 +32,9 @@ import           Network.AWS.S3
                     , createBucketConfiguration
                     , bName
                     , createBucket
+                    , getObject
+                    , gorsBody
+                    , gorsContentLength
                     , headBucket
                     , lbrsBuckets
                     , listBuckets
@@ -76,8 +80,12 @@ doListObjects S3Info{..} = withAWS' aws $ do
     result <- send $ listObjectsV bucketName
     return $ [ x ^. oKey | x <- result ^. lrsContents ]
 
-doGetObject :: S3Info -> IO Text
-doGetObject = undefined
+doGetObject :: S3Info -> IO (Maybe Integer)
+doGetObject S3Info{..} = withAWS' aws $ do
+    result <- send $ getObject bucketName "object-key"
+    let mbContentLength = result ^. gorsContentLength
+        body = result ^. gorsBody
+    return mbContentLength
 
 main :: IO ()
 main = do
@@ -91,7 +99,6 @@ main = do
     bucketNames <- doListBuckets s3Info
     forM_ bucketNames $ \n ->
         Text.putStrLn $ "  " <> toText n
-    -}
 
     putStrLn "PutObject"
     doPutObject s3Info
@@ -100,3 +107,8 @@ main = do
     objectKeys <- doListObjects s3Info
     forM_ objectKeys $ \k ->
         Text.putStrLn $ "  " <> toText k
+    -}
+
+    putStrLn "GetObject"
+    mbContentLength <- doGetObject s3Info
+    print mbContentLength
