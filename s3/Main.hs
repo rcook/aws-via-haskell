@@ -30,9 +30,7 @@ import           Network.AWS.S3
 doListBuckets :: AWSInfo -> IO [BucketName]
 doListBuckets = withAWS $ do
     result <- send $ listBuckets
-    let bucketNames :: [BucketName]
-        bucketNames = [ x ^. bName | x <- result ^. lbrsBuckets ]
-    return bucketNames
+    return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
 doCreateBucket :: AWSInfo -> IO ()
 doCreateBucket = withAWS $ do
