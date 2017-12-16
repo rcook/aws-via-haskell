@@ -12,21 +12,28 @@
 
 module Main (main) where
 
--- All imports except AWSViaHaskell are explicit so we can see exactly where each function comes from
+-- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
+                    ( AWSInfo
+                    , LoggingState(..)
+                    , getAWSInfo
+                    , intToText
+                    , parseInt
+                    , withAWS'
+                    )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
-import           Control.Monad.Trans.AWS
-                    ( Region(..)
-                    , send
-                    , setEndpoint
-                    )
 import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
-import           Network.AWS (await)
+import           Network.AWS
+                    ( Region(..)
+                    , await
+                    , send
+                    , setEndpoint
+                    )
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
                     , _ResourceNotFoundException
