@@ -1,4 +1,4 @@
-name:                                       dynamodb-demo
+name:                                       aws-via-haskell
 version:                                    0.1.0.0
 homepage:                                   https://github.com/rcook/aws-via-haskell#readme
 license:                                    MIT
@@ -15,7 +15,7 @@ source-repository head
   type:                                     git
   location:                                 https://github.com/rcook/aws-via-haskell.git
 
-executable dynamodb-demo-app
+executable dynamodb-app
   default-language:                         Haskell2010
   if os(darwin)
     cpp-options:                            -DOS_MACOS
@@ -23,7 +23,7 @@ executable dynamodb-demo-app
     cpp-options:                            -DOS_LINUX
   if os(windows)
     cpp-options:                            -DOS_WINDOWS
-  hs-source-dirs:                           .
+  hs-source-dirs:                           dynamodb
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
   build-depends:                            amazonka
@@ -34,3 +34,20 @@ executable dynamodb-demo-app
                                           , resourcet
                                           , text
                                           , unordered-containers
+
+executable s3-app
+  default-language:                         Haskell2010
+  if os(darwin)
+    cpp-options:                            -DOS_MACOS
+  if os(linux)
+    cpp-options:                            -DOS_LINUX
+  if os(windows)
+    cpp-options:                            -DOS_WINDOWS
+  hs-source-dirs:                           s3
+  main-is:                                  Main.hs
+  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
+  build-depends:                            amazonka
+                                          , amazonka-s3
+                                          , base >= 4.7 && < 5
+                                          , lens
+                                          , resourcet
