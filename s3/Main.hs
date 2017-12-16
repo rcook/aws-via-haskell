@@ -66,15 +66,18 @@ doListBuckets S3Info{..} = withAWS' aws $ do
     result <- send $ listBuckets
     return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
+doPutObject :: S3Info -> IO ()
+doPutObject S3Info{..} = withAWS' aws $ do
+    void $ send $ putObject bucketName "object-key" "object-value"
+    return ()
+
 doListObjects :: S3Info -> IO [ObjectKey]
 doListObjects S3Info{..} = withAWS' aws $ do
     result <- send $ listObjectsV bucketName
     return $ [ x ^. oKey | x <- result ^. lrsContents ]
 
-doPutObject :: S3Info -> IO ()
-doPutObject S3Info{..} = withAWS' aws $ do
-    void $ send $ putObject bucketName undefined undefined
-    return ()
+doGetObject :: S3Info -> IO Text
+doGetObject = undefined
 
 main :: IO ()
 main = do
@@ -90,10 +93,10 @@ main = do
         Text.putStrLn $ "  " <> toText n
     -}
 
+    putStrLn "PutObject"
+    doPutObject s3Info
+
     putStrLn "ListObjects"
     objectKeys <- doListObjects s3Info
     forM_ objectKeys $ \k ->
         Text.putStrLn $ "  " <> toText k
-
-    --putStrLn "PutObject"
-    --doPutObject s3Info
