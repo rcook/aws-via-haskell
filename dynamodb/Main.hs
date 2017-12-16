@@ -13,6 +13,11 @@
 module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
+import           AWSViaHaskell
+                    ( AWSInfo(..)
+                    , LoggingState(..)
+                    , withAWS
+                    )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((<&>), (^.), (.~), (&), set)
 import           Control.Monad (void, when)
@@ -20,18 +25,13 @@ import           Control.Monad.Trans.AWS
                     ( AWST'
                     , Credentials(..)
                     , Env
-                    , HasEnv
                     , LogLevel(..)
                     , Region(..)
                     , envLogger
                     , newEnv
                     , newLogger
-                    , reconfigure
-                    , runAWST
-                    , runResourceT
                     , send
                     , setEndpoint
-                    , within
                     )
 import           Control.Monad.Trans.Resource (MonadBaseControl, ResourceT)
 import           Data.ByteString (ByteString)
@@ -75,8 +75,6 @@ type HostName = ByteString
 
 type Port = Int
 
-data LoggingState = LoggingEnabled | LoggingDisabled
-
 data ServiceType = AWS Region | Local HostName Port
 
 data DBInfo = DBInfo
@@ -112,15 +110,14 @@ getDBInfo loggingState serviceType = do
         -- Run against a local DynamoDB instance on a given host and port
         serviceRegion (Local hostName port) = (setEndpoint False hostName port dynamoDB, NorthVirginia)
 
-withDynamoDB :: (HasEnv r, MonadBaseControl IO m) =>
-    r
+withDynamoDB :: MonadBaseControl IO m =>
+    Env
     -> Service
     -> Region
-    -> AWST' r (ResourceT m) a
+    -> AWST' Env (ResourceT m) a
     -> m a
 withDynamoDB env service region action =
-    runResourceT . runAWST env . within region $ do
-        reconfigure service action
+    let aws = AWSInfo env region service in withAWS aws action
 
 -- Creates a table in DynamoDB and waits until table is in active state
 -- Demonstrates:

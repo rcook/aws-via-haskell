@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module AWSViaHaskell.Util
-    ( AWSInfo
+    ( AWSInfo(..)
     , LoggingState(..)
     , getAWSInfo
     , withAWS
