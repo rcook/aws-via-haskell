@@ -69,16 +69,16 @@ type Port = Int
 
 data ServiceType = AWS Region | Local HostName Port
 
-data DBInfo = DBInfo
+data DynamoDBInfo = DynamoDBInfo
     { aws :: AWSInfo
     , tableName :: Text
     }
 
-getDBInfo :: LoggingState -> ServiceType -> IO DBInfo
-getDBInfo loggingState serviceType = do
+getDynamoDBInfo :: LoggingState -> ServiceType -> IO DynamoDBInfo
+getDynamoDBInfo loggingState serviceType = do
     let (region, service) = regionService serviceType
     aws <- getAWSInfo loggingState region service
-    return $ DBInfo aws "table"
+    return $ DynamoDBInfo aws "table"
     where
         -- Run against a DynamoDB instance running on AWS in specified region
         regionService (AWS region) = (region, dynamoDB)
@@ -92,8 +92,8 @@ getDBInfo loggingState serviceType = do
 -- * How to handle exceptions in lenses
 -- * Basic use of amazonka-style lenses
 -- * How to wait on an asynchronous operation
-doCreateTableIfNotExists :: DBInfo -> IO ()
-doCreateTableIfNotExists DBInfo{..} = withAWS' aws $ do
+doCreateTableIfNotExists :: DynamoDBInfo -> IO ()
+doCreateTableIfNotExists DynamoDBInfo{..} = withAWS' aws $ do
     exists <- handling _ResourceInUseException (const (pure True)) $ do
         void $ send $ createTable
                         tableName
@@ -104,16 +104,16 @@ doCreateTableIfNotExists DBInfo{..} = withAWS' aws $ do
     when (not exists) (void $ await tableExists (describeTable tableName))
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
-doDeleteTableIfExists :: DBInfo -> IO ()
-doDeleteTableIfExists DBInfo{..} = withAWS' aws $ do
+doDeleteTableIfExists :: DynamoDBInfo -> IO ()
+doDeleteTableIfExists DynamoDBInfo{..} = withAWS' aws $ do
     exists <- handling _ResourceNotFoundException (const (pure False)) $ do
         void $ send $ deleteTable tableName
         return True
     when exists (void $ await tableNotExists (describeTable tableName))
 
 -- Puts an item into the DynamoDB table
-doPutItem :: DBInfo -> Int -> IO ()
-doPutItem DBInfo{..} value = withAWS' aws $ do
+doPutItem :: DynamoDBInfo -> Int -> IO ()
+doPutItem DynamoDBInfo{..} value = withAWS' aws $ do
     void $ send $ putItem tableName
                     & piItem .~ item
     where item = HashMap.fromList
@@ -122,8 +122,8 @@ doPutItem DBInfo{..} value = withAWS' aws $ do
             ]
 
 -- Updates an item in the DynamoDB table
-doUpdateItem :: DBInfo -> IO ()
-doUpdateItem DBInfo{..} = withAWS' aws $ do
+doUpdateItem :: DynamoDBInfo -> IO ()
+doUpdateItem DynamoDBInfo{..} = withAWS' aws $ do
     void $ send $ updateItem tableName
                     & uiKey .~ key
                     & uiUpdateExpression .~ Just "ADD counter_value :increment"
@@ -137,8 +137,8 @@ doUpdateItem DBInfo{..} = withAWS' aws $ do
             ]
 
 -- Gets an item from the DynamoDB table
-doGetItem :: DBInfo -> IO (Maybe Int)
-doGetItem DBInfo{..} = withAWS' aws $ do
+doGetItem :: DynamoDBInfo -> IO (Maybe Int)
+doGetItem DynamoDBInfo{..} = withAWS' aws $ do
     result <- send $ getItem tableName
                         & giKey .~ key
     return $ do
@@ -151,23 +151,23 @@ doGetItem DBInfo{..} = withAWS' aws $ do
 
 main :: IO ()
 main = do
-    --db <- getDBInfo LoggingEnabled (AWS Ohio)
-    db <- getDBInfo LoggingDisabled (Local "localhost" 8000)
+    --ddbInfo <- getDynamoDBInfo LoggingEnabled (AWS Ohio)
+    ddbInfo <- getDynamoDBInfo LoggingDisabled (Local "localhost" 8000)
 
     putStrLn "DeleteTable"
-    doDeleteTableIfExists db
+    doDeleteTableIfExists ddbInfo
 
     putStrLn "CreateTable"
-    doCreateTableIfNotExists db
+    doCreateTableIfNotExists ddbInfo
 
     putStrLn "PutItem"
-    doPutItem db 1234
+    doPutItem ddbInfo 1234
 
     putStrLn "UpdateItem"
-    doUpdateItem db
+    doUpdateItem ddbInfo
 
     putStrLn "GetItem"
-    counter <- doGetItem db
+    counter <- doGetItem ddbInfo
     print counter
 
     putStrLn "Done"
