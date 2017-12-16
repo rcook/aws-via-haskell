@@ -9,21 +9,30 @@
 module Main (main) where
 
 import           AWSViaHaskell
-import           Control.Monad (void)
+import           Control.Lens ((^.))
+import           Control.Monad (forM_, void)
+import           Data.Monoid ((<>))
+import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
                     ( Region(..)
                     , send
                     )
+import           Network.AWS.Data (toText)
 import           Network.AWS.S3
                     ( BucketName(..)
+                    , bName
                     , createBucket
+                    , lbrsBuckets
                     , listBuckets
                     , s3
                     )
 
-doListBuckets :: AWSInfo -> IO ()
+doListBuckets :: AWSInfo -> IO [BucketName]
 doListBuckets = withAWS $ do
-    void $ send $ listBuckets
+    result <- send $ listBuckets
+    let bucketNames :: [BucketName]
+        bucketNames = [ x ^. bName | x <- result ^. lbrsBuckets ]
+    return bucketNames
 
 doCreateBucket :: AWSInfo -> IO ()
 doCreateBucket = withAWS $ do
@@ -31,12 +40,12 @@ doCreateBucket = withAWS $ do
 
 main :: IO ()
 main = do
-    aws <- getAWSInfo LoggingEnabled Ohio s3
+    aws <- getAWSInfo LoggingDisabled Ohio s3
 
     putStrLn "ListBuckets"
-    doListBuckets aws
+    bucketNames <- doListBuckets aws
+    forM_ bucketNames $
+        \n -> Text.putStrLn $ "  " <> toText n
 
-    putStrLn "CreateBucket"
-    doCreateBucket aws
-
-    putStrLn "Hello from S3Demo.main"
+    --putStrLn "CreateBucket"
+    --doCreateBucket aws
