@@ -26,8 +26,6 @@ import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
-import qualified Data.Text as Text (null, pack)
-import           Data.Text.Read (decimal)
 import           Network.AWS (await)
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
@@ -68,14 +66,6 @@ data DBInfo = DBInfo
     { aws :: AWSInfo
     , tableName :: Text
     }
-
-intToText :: Int -> Text
-intToText = Text.pack . show
-
-parseInt :: Text -> Maybe Int
-parseInt s = case decimal s of
-    Left _ -> Nothing
-    Right (result, s') -> if Text.null s' then Just result else Nothing
 
 getDBInfo :: LoggingState -> ServiceType -> IO DBInfo
 getDBInfo loggingState serviceType = do
