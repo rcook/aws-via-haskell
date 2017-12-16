@@ -16,31 +16,24 @@ module Main (main) where
 import           AWSViaHaskell
                     ( AWSInfo(..)
                     , LoggingState(..)
+                    , getAWSInfo
                     , withAWS
                     )
 import           Control.Exception.Lens (handling)
-import           Control.Lens ((<&>), (^.), (.~), (&), set)
+import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
 import           Control.Monad.Trans.AWS
-                    ( AWST'
-                    , Credentials(..)
-                    , Env
-                    , LogLevel(..)
-                    , Region(..)
-                    , envLogger
-                    , newEnv
-                    , newLogger
+                    ( Region(..)
                     , send
                     , setEndpoint
                     )
-import           Control.Monad.Trans.Resource (MonadBaseControl, ResourceT)
 import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import qualified Data.Text as Text (null, pack)
 import           Data.Text.Read (decimal)
-import           Network.AWS (Service, await)
+import           Network.AWS (await)
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
                     , _ResourceNotFoundException
@@ -69,7 +62,6 @@ import           Network.AWS.DynamoDB
                     , uiUpdateExpression
                     , updateItem
                     )
-import           System.IO (stdout)
 
 type HostName = ByteString
 
@@ -78,9 +70,7 @@ type Port = Int
 data ServiceType = AWS Region | Local HostName Port
 
 data DBInfo = DBInfo
-    { env :: Env
-    , service :: Service
-    , region :: Region
+    { aws :: AWSInfo
     , tableName :: Text
     }
 
@@ -94,30 +84,14 @@ parseInt s = case decimal s of
 
 getDBInfo :: LoggingState -> ServiceType -> IO DBInfo
 getDBInfo loggingState serviceType = do
-    env <- getEnv loggingState
-    let (service, region) = serviceRegion serviceType
-    return $ DBInfo env service region "table"
+    let (region, service) = regionService serviceType
+    aws <- getAWSInfo loggingState region service
+    return $ DBInfo aws "table"
     where
-        -- Standard discovery mechanism for credentials, log to standard output
-        getEnv LoggingEnabled = do
-            logger <- newLogger Debug stdout
-            newEnv Discover <&> set envLogger logger
-        -- Standard discovery mechanism for credentials, no logging
-        getEnv LoggingDisabled = newEnv Discover
-
         -- Run against a DynamoDB instance running on AWS in specified region
-        serviceRegion (AWS region) = (dynamoDB, region)
+        regionService (AWS region) = (region, dynamoDB)
         -- Run against a local DynamoDB instance on a given host and port
-        serviceRegion (Local hostName port) = (setEndpoint False hostName port dynamoDB, NorthVirginia)
-
-withDynamoDB :: MonadBaseControl IO m =>
-    Env
-    -> Service
-    -> Region
-    -> AWST' Env (ResourceT m) a
-    -> m a
-withDynamoDB env service region action =
-    let aws = AWSInfo env region service in withAWS aws action
+        regionService (Local hostName port) = (NorthVirginia, setEndpoint False hostName port dynamoDB)
 
 -- Creates a table in DynamoDB and waits until table is in active state
 -- Demonstrates:
@@ -127,7 +101,7 @@ withDynamoDB env service region action =
 -- * Basic use of amazonka-style lenses
 -- * How to wait on an asynchronous operation
 doCreateTableIfNotExists :: DBInfo -> IO ()
-doCreateTableIfNotExists DBInfo{..} = withDynamoDB env service region $ do
+doCreateTableIfNotExists DBInfo{..} = withAWS aws $ do
     exists <- handling _ResourceInUseException (const (pure True)) $ do
         void $ send $ createTable
             tableName
@@ -139,7 +113,7 @@ doCreateTableIfNotExists DBInfo{..} = withDynamoDB env service region $ do
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: DBInfo -> IO ()
-doDeleteTableIfExists DBInfo{..} = withDynamoDB env service region $ do
+doDeleteTableIfExists DBInfo{..} = withAWS aws $ do
     exists <- handling _ResourceNotFoundException (const (pure False)) $ do
         void $ send $ deleteTable tableName
         return True
@@ -147,7 +121,7 @@ doDeleteTableIfExists DBInfo{..} = withDynamoDB env service region $ do
 
 -- Puts an item into the DynamoDB table
 doPutItem :: DBInfo -> Int -> IO ()
-doPutItem DBInfo{..} value = withDynamoDB env service region $ do
+doPutItem DBInfo{..} value = withAWS aws $ do
     void $ send $ putItem tableName
         & piItem .~ item
     where item = HashMap.fromList
@@ -157,7 +131,7 @@ doPutItem DBInfo{..} value = withDynamoDB env service region $ do
 
 -- Updates an item in the DynamoDB table
 doUpdateItem :: DBInfo -> IO ()
-doUpdateItem DBInfo{..} = withDynamoDB env service region $ do
+doUpdateItem DBInfo{..} = withAWS aws $ do
     void $ send $ updateItem tableName
         & uiKey .~ key
         & uiUpdateExpression .~ Just "ADD counter_value :increment"
@@ -172,7 +146,7 @@ doUpdateItem DBInfo{..} = withDynamoDB env service region $ do
 
 -- Gets an item from the DynamoDB table
 doGetItem :: DBInfo -> IO (Maybe Int)
-doGetItem DBInfo{..} = withDynamoDB env service region $ do
+doGetItem DBInfo{..} = withAWS aws $ do
     result <- send $ getItem tableName
         & giKey .~ key
     return $ do
