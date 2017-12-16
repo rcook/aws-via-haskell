@@ -96,10 +96,10 @@ doCreateTableIfNotExists :: DBInfo -> IO ()
 doCreateTableIfNotExists DBInfo{..} = withAWS' aws $ do
     exists <- handling _ResourceInUseException (const (pure True)) $ do
         void $ send $ createTable
-            tableName
-            (keySchemaElement "counter_name" Hash :| [])
-            (provisionedThroughput 5 5)
-            & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
+                        tableName
+                        (keySchemaElement "counter_name" Hash :| [])
+                        (provisionedThroughput 5 5)
+                        & ctAttributeDefinitions .~ [ attributeDefinition "counter_name" S ]
         return False
     when (not exists) (void $ await tableExists (describeTable tableName))
 
@@ -115,7 +115,7 @@ doDeleteTableIfExists DBInfo{..} = withAWS' aws $ do
 doPutItem :: DBInfo -> Int -> IO ()
 doPutItem DBInfo{..} value = withAWS' aws $ do
     void $ send $ putItem tableName
-        & piItem .~ item
+                    & piItem .~ item
     where item = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
             , ("counter_value", attributeValue & avN .~ Just (intToText value))
@@ -125,9 +125,9 @@ doPutItem DBInfo{..} value = withAWS' aws $ do
 doUpdateItem :: DBInfo -> IO ()
 doUpdateItem DBInfo{..} = withAWS' aws $ do
     void $ send $ updateItem tableName
-        & uiKey .~ key
-        & uiUpdateExpression .~ Just "ADD counter_value :increment"
-        & uiExpressionAttributeValues .~ exprAttrValues
+                    & uiKey .~ key
+                    & uiUpdateExpression .~ Just "ADD counter_value :increment"
+                    & uiExpressionAttributeValues .~ exprAttrValues
     where
         key = HashMap.fromList
             [ ("counter_name", attributeValue & avS .~ Just "my-counter")
@@ -140,7 +140,7 @@ doUpdateItem DBInfo{..} = withAWS' aws $ do
 doGetItem :: DBInfo -> IO (Maybe Int)
 doGetItem DBInfo{..} = withAWS' aws $ do
     result <- send $ getItem tableName
-        & giKey .~ key
+                        & giKey .~ key
     return $ do
         valueAttr <- HashMap.lookup "counter_value" (result ^. girsItem)
         valueNStr <- valueAttr ^. avN
