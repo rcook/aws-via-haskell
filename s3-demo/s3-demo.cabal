@@ -30,3 +30,5 @@ executable s3-demo-app
   build-depends:                            amazonka
                                           , amazonka-s3
                                           , base >= 4.7 && < 5
+                                          , lens
+                                          , resourcet
