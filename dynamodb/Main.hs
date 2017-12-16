@@ -12,7 +12,7 @@
 
 module Main (main) where
 
--- All imports are explicit so we can see exactly where each function comes from
+-- All imports except AWSViaHaskell are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
