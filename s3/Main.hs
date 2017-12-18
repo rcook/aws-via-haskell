@@ -16,8 +16,7 @@ import           Data.Conduit.Binary (sinkFile)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
-                    ( Region(..)
-                    , await
+                    ( await
                     , send
                     , sinkBody
                     )
@@ -85,7 +84,6 @@ doGetObject :: S3Info -> IO (Maybe Integer)
 doGetObject S3Info{..} = withAWS' aws $ do
     result <- send $ getObject bucketName "object-key"
     let mbContentLength = result ^. gorsContentLength
-        body = result ^. gorsBody
     (result ^. gorsBody) `sinkBody` sinkFile "hello.txt"
     return mbContentLength
 
