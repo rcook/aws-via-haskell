@@ -69,6 +69,7 @@ executable s3-app
                                           , amazonka-s3
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
+                                          , conduit-extra
                                           , lens
                                           , resourcet
                                           , text

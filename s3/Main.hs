@@ -12,6 +12,7 @@ import           AWSViaHaskell
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)
+import           Data.Conduit.Binary (sinkFile)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
@@ -85,6 +86,7 @@ doGetObject S3Info{..} = withAWS' aws $ do
     result <- send $ getObject bucketName "object-key"
     let mbContentLength = result ^. gorsContentLength
         body = result ^. gorsBody
+    (result ^. gorsBody) `sinkBody` sinkFile "hello.txt"
     return mbContentLength
 
 main :: IO ()
