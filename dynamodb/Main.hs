@@ -16,6 +16,7 @@ module Main (main) where
 import           AWSViaHaskell
                     ( AWSInfo
                     , LoggingState(..)
+                    , ServiceEndpoint(..)
                     , getAWSInfo
                     , intToText
                     , parseInt
@@ -24,15 +25,12 @@ import           AWSViaHaskell
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
-import           Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import           Network.AWS
-                    ( Region(..)
-                    , await
+                    ( await
                     , send
-                    , setEndpoint
                     )
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
@@ -63,27 +61,15 @@ import           Network.AWS.DynamoDB
                     , updateItem
                     )
 
-type HostName = ByteString
-
-type Port = Int
-
-data ServiceType = AWS Region | Local HostName Port
-
 data DynamoDBInfo = DynamoDBInfo
     { aws :: AWSInfo
     , tableName :: Text
     }
 
-getDynamoDBInfo :: LoggingState -> ServiceType -> IO DynamoDBInfo
-getDynamoDBInfo loggingState serviceType = do
-    let (region, service) = regionService serviceType
-    aws <- getAWSInfo loggingState region service
+getDynamoDBInfo :: LoggingState -> ServiceEndpoint -> IO DynamoDBInfo
+getDynamoDBInfo loggingState serviceEndpoint = do
+    aws <- getAWSInfo loggingState serviceEndpoint dynamoDB
     return $ DynamoDBInfo aws "table"
-    where
-        -- Run against a DynamoDB instance running on AWS in specified region
-        regionService (AWS region) = (region, dynamoDB)
-        -- Run against a local DynamoDB instance on a given host and port
-        regionService (Local hostName port) = (NorthVirginia, setEndpoint False hostName port dynamoDB)
 
 -- Creates a table in DynamoDB and waits until table is in active state
 -- Demonstrates:

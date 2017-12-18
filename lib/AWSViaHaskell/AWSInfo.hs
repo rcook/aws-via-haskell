@@ -8,6 +8,7 @@
 module AWSViaHaskell.AWSInfo
     ( AWSInfo(..)
     , LoggingState(..)
+    , ServiceEndpoint(..)
     , getAWSInfo
     , withAWS
     , withAWS'
@@ -16,7 +17,15 @@ module AWSViaHaskell.AWSInfo
 import           Control.Lens ((<&>), set)
 import           Control.Monad.Trans.AWS
                     ( AWST'
-                    , Credentials(..)
+                    , runAWST
+                    )
+import           Control.Monad.Trans.Resource
+                    ( MonadBaseControl
+                    , ResourceT
+                    )
+import           Data.ByteString (ByteString)
+import           Control.Monad.Trans.AWS
+                    ( Credentials(..)
                     , Env
                     , LogLevel(..)
                     , Region(..)
@@ -25,15 +34,15 @@ import           Control.Monad.Trans.AWS
                     , newEnv
                     , newLogger
                     , reconfigure
-                    , runAWST
                     , runResourceT
+                    , setEndpoint
                     , within
                     )
-import           Control.Monad.Trans.Resource
-                    ( MonadBaseControl
-                    , ResourceT
-                    )
 import           System.IO (stdout)
+
+type HostName = ByteString
+
+type Port = Int
 
 data AWSInfo = AWSInfo
     { env :: Env
@@ -43,9 +52,12 @@ data AWSInfo = AWSInfo
 
 data LoggingState = LoggingEnabled | LoggingDisabled
 
-getAWSInfo :: LoggingState -> Region -> Service -> IO AWSInfo
-getAWSInfo loggingState r s = do
+data ServiceEndpoint = AWS Region | Local HostName Port
+
+getAWSInfo :: LoggingState -> ServiceEndpoint -> Service -> IO AWSInfo
+getAWSInfo loggingState serviceEndpoint service = do
     e <- getEnv loggingState
+    let (r, s) = regionService serviceEndpoint service
     return $ AWSInfo e r s
     where
         -- Standard discovery mechanism for credentials, log to standard output
@@ -54,6 +66,11 @@ getAWSInfo loggingState r s = do
             newEnv Discover <&> set envLogger logger
         -- Standard discovery mechanism for credentials, no logging
         getEnv LoggingDisabled = newEnv Discover
+
+        -- Run against a DynamoDB instance running on AWS in specified region
+        regionService (AWS region) s = (region, s)
+        -- Run against a local DynamoDB instance on a given host and port
+        regionService (Local hostName port) s = (NorthVirginia, setEndpoint False hostName port s)
 
 withAWS :: MonadBaseControl IO m =>
     AWST' Env (ResourceT m) a

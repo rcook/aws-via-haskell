@@ -51,9 +51,9 @@ data S3Info = S3Info
     , bucketName :: BucketName
     }
 
-getS3Info :: LoggingState -> Region -> IO S3Info
-getS3Info loggingState region = do
-    aws <- getAWSInfo loggingState region s3
+getS3Info :: LoggingState -> ServiceEndpoint -> IO S3Info
+getS3Info loggingState serviceEndpoint = do
+    aws <- getAWSInfo loggingState serviceEndpoint s3
     return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
 
 doCreateBucketIfNotExists :: S3Info -> IO ()
@@ -91,7 +91,8 @@ doGetObject S3Info{..} = withAWS' aws $ do
 
 main :: IO ()
 main = do
-    s3Info <- getS3Info LoggingDisabled Ohio
+    -- localstack by default exposes its S3 service on port 4572
+    s3Info <- getS3Info LoggingDisabled (Local "localhost" 4572)
 
     {-
     putStrLn "CreateBucket"

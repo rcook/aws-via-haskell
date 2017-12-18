@@ -27,6 +27,7 @@ library
   ghc-options:                              -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
   build-depends:                            amazonka
                                           , base >= 4.7 && < 5
+                                          , bytestring
                                           , lens
                                           , resourcet
                                           , text
@@ -49,7 +50,6 @@ executable dynamodb-app
                                           , amazonka-dynamodb
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
-                                          , bytestring
                                           , lens
                                           , text
                                           , unordered-containers
