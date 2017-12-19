@@ -12,7 +12,9 @@ import           AWSViaHaskell
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)
-import           Data.Conduit.Binary (sinkFile)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as ByteString
+import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
@@ -34,7 +36,6 @@ import           Network.AWS.S3
                     , createBucket
                     , getObject
                     , gorsBody
-                    , gorsContentLength
                     , headBucket
                     , lbrsBuckets
                     , listBuckets
@@ -72,7 +73,7 @@ doListBuckets S3Info{..} = withAWS' aws $ do
 
 doPutObject :: S3Info -> IO ()
 doPutObject S3Info{..} = withAWS' aws $ do
-    void $ send $ putObject bucketName "object-key" "object-value"
+    void $ send $ putObject bucketName "object-key" "object-bytes"
     return ()
 
 doListObjects :: S3Info -> IO [ObjectKey]
@@ -80,19 +81,16 @@ doListObjects S3Info{..} = withAWS' aws $ do
     result <- send $ listObjectsV bucketName
     return $ [ x ^. oKey | x <- result ^. lrsContents ]
 
-doGetObject :: S3Info -> IO (Maybe Integer)
+doGetObject :: S3Info -> IO ByteString
 doGetObject S3Info{..} = withAWS' aws $ do
     result <- send $ getObject bucketName "object-key"
-    let mbContentLength = result ^. gorsContentLength
-    (result ^. gorsBody) `sinkBody` sinkFile "hello.txt"
-    return mbContentLength
+    (result ^. gorsBody) `sinkBody` sinkLbs
 
 main :: IO ()
 main = do
     -- localstack by default exposes its S3 service on port 4572
     s3Info <- getS3Info LoggingDisabled (Local "localhost" 4572)
 
-    {-
     putStrLn "CreateBucket"
     doCreateBucketIfNotExists s3Info
 
@@ -108,8 +106,7 @@ main = do
     objectKeys <- doListObjects s3Info
     forM_ objectKeys $ \k ->
         Text.putStrLn $ "  " <> toText k
-    -}
 
     putStrLn "GetObject"
-    mbContentLength <- doGetObject s3Info
-    print mbContentLength
+    content <- doGetObject s3Info
+    ByteString.putStrLn content
