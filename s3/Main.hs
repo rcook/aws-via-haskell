@@ -2,8 +2,8 @@
 -- Copyright (C) 2017, All rights reserved.
 --------------------------------------------------
 
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main (main) where
