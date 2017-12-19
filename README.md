@@ -42,12 +42,12 @@ stack exec dynamodb-app
 
 ### Part 2: S3
 
-* Blog post is work in pgress
+* [See blog post][s3-post]
 * [See code][s3-code]
 
 #### Set up local S3
 
-There appears to be no way to do this unfortunately.
+[localstack][localstack] can do this but has [some-problems][bug].
 
 #### Run application
 
@@ -61,8 +61,11 @@ Released under [MIT License][licence]
 
 [aws-cli]: https://aws.amazon.com/cli/
 [blog]: http://blog.rcook.org/
+[bug]: https://github.com/brendanhay/amazonka/issues/432
 [dynamodb-code]: dynamodb
 [dynamodb-post]: http://blog.rcook.org/blog/2017/aws-via-haskell/
 [licence]: LICENSE
 [local-dynamodb]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
+[localstack]: https://github.com/localstack/localstack
 [s3-code]: s3
+[s3-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-s3/
