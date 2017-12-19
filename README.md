@@ -1,6 +1,8 @@
 # AWS via Haskell by Richard Cook
 
-A series of [blog posts][blog] by Me
+This is the full project that accompanies my [AWS via Haskell][aws-via-haskell] series of blog posts.
+
+Note that the code in this repository is more actively maintained that the code originally posted on the blog and so will occasionally differ, especially as I consolidate code shared between the different examples.
 
 ## Setup
 
@@ -47,7 +49,7 @@ stack exec dynamodb-app
 
 #### Set up local S3
 
-[localstack][localstack] can do this but has [some-problems][bug].
+[localstack][localstack] can do this but has [some problems][bug].
 
 #### Run application
 
@@ -60,7 +62,7 @@ stack exec s3-app
 Released under [MIT License][licence]
 
 [aws-cli]: https://aws.amazon.com/cli/
-[blog]: http://blog.rcook.org/
+[aws-via-haskell]: http://blog.rcook.org/blog/2017/aws-via-haskell/
 [bug]: https://github.com/brendanhay/amazonka/issues/432
 [dynamodb-code]: dynamodb
 [dynamodb-post]: http://blog.rcook.org/blog/2017/aws-via-haskell/
