@@ -18,7 +18,8 @@ import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
-                    ( await
+                    ( Region(..)
+                    , await
                     , send
                     , sinkBody
                     )
@@ -88,8 +89,11 @@ doGetObject S3Info{..} = withAWS' aws $ do
 
 main :: IO ()
 main = do
+    -- Use the real thing
+    s3Info <- getS3Info LoggingDisabled (AWS Ohio)
+
     -- localstack by default exposes its S3 service on port 4572
-    s3Info <- getS3Info LoggingDisabled (Local "localhost" 4572)
+    --s3Info <- getS3Info LoggingDisabled (Local "localhost" 4572)
 
     putStrLn "CreateBucket"
     doCreateBucketIfNotExists s3Info
@@ -109,4 +113,4 @@ main = do
 
     putStrLn "GetObject"
     content <- doGetObject s3Info
-    ByteString.putStrLn content
+    ByteString.putStrLn $ "  " <> content
