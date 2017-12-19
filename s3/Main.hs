@@ -75,7 +75,6 @@ doListBuckets S3Info{..} = withAWS' aws $ do
 doPutObject :: S3Info -> IO ()
 doPutObject S3Info{..} = withAWS' aws $ do
     void $ send $ putObject bucketName "object-key" "object-bytes"
-    return ()
 
 doListObjects :: S3Info -> IO [ObjectKey]
 doListObjects S3Info{..} = withAWS' aws $ do
