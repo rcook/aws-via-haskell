@@ -18,9 +18,9 @@ import qualified Data.Text.IO as Text
 import           Network.AWS (send)
 import           Network.AWS.SQS
 
-newtype QueueName = QueueName Text
+newtype QueueName = QueueName Text deriving Show
 
-newtype QueueURL = QueueURL Text
+newtype QueueURL = QueueURL Text deriving Show
 
 doListQueues :: AWSInfo -> IO [Text]
 doListQueues = withAWS $ do
@@ -65,8 +65,8 @@ main = do
     mbQueueURL <- doGetQueueURL queueName awsInfo
     case mbQueueURL of
         Nothing -> Text.putStrLn "  (not found)"
-        Just queueURL@(QueueURL s) -> do
-            Text.putStrLn $ "  " <> s
+        Just queueURL -> do
+            putStrLn $ "  " <> show queueURL
 
             putStrLn "SendMessage"
             doSendMessage queueURL "a message" awsInfo
