@@ -57,6 +57,21 @@ stack exec dynamodb-app
 stack exec s3-app
 ```
 
+### Part 3: SQS
+
+* [See blog post][sqs-post]
+* [See code][sqs-code]
+
+#### Set up local SQS
+
+[localstack][localstack] can do this for you
+
+#### Run application
+
+```
+stack exec sqs-app
+```
+
 ## Licence
 
 Released under [MIT License][licence]
@@ -71,3 +86,5 @@ Released under [MIT License][licence]
 [localstack]: https://github.com/localstack/localstack
 [s3-code]: s3
 [s3-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-s3/
+[sqs-code]: sqs
+[sqs-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-sqs/
