@@ -2,7 +2,6 @@
 -- Copyright (C) 2017, All rights reserved.
 --------------------------------------------------
 
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
