@@ -72,6 +72,21 @@ stack exec s3-app
 stack exec sqs-app
 ```
 
+### Part 4: SimpleDB
+
+* [See blog post][sdb-post] (not posted yet)
+* [See code][sdb-code]
+
+#### Set up local SimpleDB
+
+[localstack][localstack] can do this for you
+
+#### Run application
+
+```
+stack exec sdb-app
+```
+
 ## Licence
 
 Released under [MIT License][licence]
@@ -86,5 +101,7 @@ Released under [MIT License][licence]
 [localstack]: https://github.com/localstack/localstack
 [s3-code]: s3
 [s3-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-s3/
+[sdb-code]: sdb
+[sdb-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-sdb/
 [sqs-code]: sqs
 [sqs-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-sqs/

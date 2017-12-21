@@ -75,6 +75,25 @@ executable s3-app
                                           , resourcet
                                           , text
 
+executable sdb-app
+  default-language:                         Haskell2010
+  if os(darwin)
+    cpp-options:                            -DOS_MACOS
+  if os(linux)
+    cpp-options:                            -DOS_LINUX
+  if os(windows)
+    cpp-options:                            -DOS_WINDOWS
+  hs-source-dirs:                           sdb
+  main-is:                                  Main.hs
+  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
+  build-depends:                            amazonka
+                                          , amazonka-sdb
+                                          , aws-via-haskell
+                                          , base >= 4.7 && < 5
+                                          , lens
+                                          , text
+                                          , unordered-containers
+
 executable sqs-app
   default-language:                         Haskell2010
   if os(darwin)
