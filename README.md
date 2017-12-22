@@ -64,7 +64,7 @@ stack exec s3-app
 
 #### Set up local SQS
 
-[localstack][localstack] can do this for you
+[localstack][localstack] can do this for you.
 
 #### Run application
 
@@ -74,7 +74,7 @@ stack exec sqs-app
 
 ### Part 4: SimpleDB
 
-* [See blog post][sdb-post] (not posted yet)
+* [See blog post][sdb-post]
 * [See code][sdb-code]
 
 #### Set up local SimpleDB
@@ -92,6 +92,21 @@ simpledb-dev2 serve
 stack exec sdb-app
 ```
 
+### Part 4: Lambda
+
+* [See blog post][lambda-post] (not posted yet)
+* [See code][lambda-code]
+
+#### Set up local Lambda
+
+[localstack][localstack] can do this for you.
+
+#### Run application
+
+```
+stack exec lambda-app
+```
+
 ## Licence
 
 Released under [MIT License][licence]
@@ -101,6 +116,8 @@ Released under [MIT License][licence]
 [bug]: https://github.com/brendanhay/amazonka/issues/432
 [dynamodb-code]: dynamodb
 [dynamodb-post]: http://blog.rcook.org/blog/2017/aws-via-haskell/
+[lambda-code]: lambda
+[lambda-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-lambda/
 [licence]: LICENSE
 [local-dynamodb]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html
 [localstack]: https://github.com/localstack/localstack
