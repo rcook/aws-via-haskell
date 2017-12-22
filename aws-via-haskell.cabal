@@ -92,7 +92,6 @@ executable sdb-app
                                           , base >= 4.7 && < 5
                                           , lens
                                           , text
-                                          , unordered-containers
 
 executable sqs-app
   default-language:                         Haskell2010
