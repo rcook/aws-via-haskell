@@ -79,7 +79,12 @@ stack exec sqs-app
 
 #### Set up local SimpleDB
 
-[localstack][localstack] can do this for you
+[simpledb-dev2][simpledb-dev2] can be used to run a fake local SimpleDB server:
+
+```
+pip install --user simpledb-dev2
+simpledb-dev2 serve
+```
 
 #### Run application
 
@@ -103,5 +108,6 @@ Released under [MIT License][licence]
 [s3-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-s3/
 [sdb-code]: sdb
 [sdb-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-sdb/
+[simpledb-dev2]: https://github.com/rcook/simpledb-dev2/
 [sqs-code]: sqs
 [sqs-post]: http://blog.rcook.org/blog/2017/aws-via-haskell-sqs/

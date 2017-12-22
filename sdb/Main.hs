@@ -58,7 +58,8 @@ doGetAttributes (DomainName sDN) (ItemName sIN) = withAWS $ do
 
 main :: IO ()
 main = do
-    awsInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4576) sdb
+    -- Default port for simpledb-dev2
+    awsInfo <- getAWSInfo LoggingDisabled (Local "localhost" 8080) sdb
 
     let domainName = DomainName "my-domain"
         itemName = ItemName "my-item"
