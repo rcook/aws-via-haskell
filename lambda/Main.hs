@@ -12,7 +12,7 @@ import           AWSViaHaskell
                     , LoggingState(..)
                     , ServiceEndpoint(..)
                     , awsConfig
-                    , getAWSInfo
+                    , getAWSConnection
                     , withAWS
                     )
 import           Codec.Archive.Zip
@@ -105,7 +105,7 @@ main = do
                         { acLoggingState = LoggingDisabled }
 
     -- Use real AWS STS
-    stsInfo <- getAWSInfo stsConfig
+    stsInfo <- getAWSConnection stsConfig
     -- Use localstack
     --stsInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4574) sts
 
@@ -116,7 +116,7 @@ main = do
     print role
 
     -- Use real AWS Lambda
-    lambdaInfo <- getAWSInfo lambdaConfig
+    lambdaInfo <- getAWSConnection lambdaConfig
     -- Use localstack
     --lambdaInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4574) lambda
 

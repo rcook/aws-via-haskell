@@ -9,11 +9,11 @@
 module AWSViaHaskell.AWSInfo
     ( AWSAction
     , AWSConfig(..)
-    , AWSInfo(..)
+    , AWSConnection(..)
     , LoggingState(..)
     , ServiceEndpoint(..)
     , awsConfig
-    , getAWSInfo
+    , getAWSConnection
     , withAWS
     , withAWS'
     ) where
@@ -44,7 +44,7 @@ import           Network.AWS
                     )
 import           System.IO (stdout)
 
-type AWSAction a = AWSInfo -> IO a
+type AWSAction a = AWSConnection -> IO a
 
 type HostName = ByteString
 
@@ -57,10 +57,10 @@ data AWSConfig = AWSConfig
     , acCredentials :: Credentials
     }
 
-data AWSInfo = AWSInfo
-    { env :: Env
-    , region :: Region
-    , service :: Service
+data AWSConnection = AWSConnection
+    { acxEnv :: Env
+    , acxRegion :: Region
+    , acxService :: Service
     }
 
 data LoggingState = LoggingEnabled | LoggingDisabled
@@ -70,11 +70,11 @@ data ServiceEndpoint = AWS Region | Local HostName Port
 awsConfig :: ServiceEndpoint -> Service -> AWSConfig
 awsConfig serviceEndpoint service = AWSConfig serviceEndpoint service LoggingDisabled Discover
 
-getAWSInfo :: AWSConfig -> IO AWSInfo
-getAWSInfo AWSConfig{..} = do
+getAWSConnection :: AWSConfig -> IO AWSConnection
+getAWSConnection AWSConfig{..} = do
     e <- mkEnv acLoggingState acCredentials
     let (r, s) = regionService acServiceEndpoint acService
-    return $ AWSInfo e r s
+    return $ AWSConnection e r s
     where
         -- Standard discovery mechanism for credentials, log to standard output
         mkEnv LoggingEnabled c = do
@@ -90,14 +90,14 @@ getAWSInfo AWSConfig{..} = do
 
 withAWS :: MonadBaseControl IO m =>
     AWST' Env (ResourceT m) a
-    -> AWSInfo
+    -> AWSConnection
     -> m a
-withAWS action AWSInfo{..} =
-    runResourceT . runAWST env . within region $ do
-        reconfigure service action
+withAWS action AWSConnection{..} =
+    runResourceT . runAWST acxEnv . within acxRegion $ do
+        reconfigure acxService action
 
 withAWS' :: MonadBaseControl IO m =>
-    AWSInfo
+    AWSConnection
     -> AWST' Env (ResourceT m) a
     -> m a
 withAWS' = flip withAWS

@@ -7,12 +7,13 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSInfo
+                    ( AWSAction
+                    , AWSConfig(..)
+                    , AWSConnection
                     , LoggingState(..)
                     , ServiceEndpoint(..)
                     , awsConfig
-                    , getAWSInfo
+                    , getAWSConnection
                     , withAWS
                     )
 import           Control.Lens ((&), (^.), (.~))
@@ -39,21 +40,21 @@ newtype DomainName = DomainName Text deriving Show
 
 newtype ItemName = ItemName Text deriving Show
 
-doCreateDomainIfNotExists :: DomainName -> AWSInfo -> IO ()
+doCreateDomainIfNotExists :: DomainName -> AWSAction ()
 doCreateDomainIfNotExists (DomainName s) = withAWS $ do
     void $ send $ createDomain s
 
-doListDomains :: AWSInfo -> IO [DomainName]
+doListDomains :: AWSAction [DomainName]
 doListDomains = withAWS $ do
     result <- send $ listDomains
     return [ DomainName s | s <- result ^. ldrsDomainNames ]
 
-doPutAttributes :: DomainName -> ItemName -> [(Text, Text)] -> AWSInfo -> IO ()
+doPutAttributes :: DomainName -> ItemName -> [(Text, Text)] -> AWSAction ()
 doPutAttributes (DomainName sDN) (ItemName sIN) attrs = withAWS $ do
     void $ send $ putAttributes sDN sIN
                     & paAttributes .~ map (uncurry replaceableAttribute) attrs
 
-doGetAttributes :: DomainName -> ItemName -> AWSInfo -> IO [(Text, Text)]
+doGetAttributes :: DomainName -> ItemName -> AWSAction [(Text, Text)]
 doGetAttributes (DomainName sDN) (ItemName sIN) = withAWS $ do
     result <- send $ getAttributes sDN sIN
     return [ (attr ^. aName, attr ^. aValue) | attr <- result ^. garsAttributes ]
@@ -61,8 +62,8 @@ doGetAttributes (DomainName sDN) (ItemName sIN) = withAWS $ do
 main :: IO ()
 main = do
     -- Default port for simpledb-dev2
-    awsInfo <- getAWSInfo $ (awsConfig (Local "localhost" 8080) sdb)
-                                { acLoggingState = LoggingDisabled }
+    awsInfo <- getAWSConnection $ (awsConfig (Local "localhost" 8080) sdb)
+                                    { acLoggingState = LoggingDisabled }
 
     let domainName = DomainName "my-domain"
         itemName = ItemName "my-item"

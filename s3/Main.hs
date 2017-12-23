@@ -9,11 +9,11 @@ module Main (main) where
 
 import           AWSViaHaskell
                     ( AWSConfig(..)
-                    , AWSInfo(..)
+                    , AWSConnection(..)
                     , LoggingState(..)
                     , ServiceEndpoint(..)
                     , awsConfig
-                    , getAWSInfo
+                    , getAWSConnection
                     , withAWS'
                     )
 import           Control.Exception.Lens (handling)
@@ -55,20 +55,20 @@ import           Network.AWS.S3
                     )
 
 data S3Info = S3Info
-    { aws :: AWSInfo
+    { aws :: AWSConnection
     , bucketName :: BucketName
     }
 
 getS3Info :: LoggingState -> ServiceEndpoint -> IO S3Info
 getS3Info loggingState serviceEndpoint = do
-    aws <- getAWSInfo $ (awsConfig serviceEndpoint s3)
+    aws <- getAWSConnection $ (awsConfig serviceEndpoint s3)
                             { acLoggingState = loggingState }
     return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
 
 doCreateBucketIfNotExists :: S3Info -> IO ()
 doCreateBucketIfNotExists S3Info{..} = withAWS' aws $ do
     let cbc = createBucketConfiguration
-                & cbcLocationConstraint .~ Just (LocationConstraint (region aws))
+                & cbcLocationConstraint .~ Just (LocationConstraint (acxRegion aws))
     newlyCreated <- handling _BucketAlreadyOwnedByYou (const (pure False)) $ do
         void $ send $ createBucket bucketName
                         & cbCreateBucketConfiguration .~ Just cbc

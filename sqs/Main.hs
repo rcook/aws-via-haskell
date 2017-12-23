@@ -7,12 +7,12 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSInfo
+                    ( AWSAction
+                    , AWSConfig(..)
                     , LoggingState(..)
                     , ServiceEndpoint(..)
                     , awsConfig
-                    , getAWSInfo
+                    , getAWSConnection
                     , withAWS
                     )
 import           Control.Exception.Lens (handling)
@@ -40,25 +40,25 @@ newtype QueueName = QueueName Text deriving Show
 
 newtype QueueURL = QueueURL Text deriving Show
 
-doListQueues :: AWSInfo -> IO [Text]
+doListQueues :: AWSAction [Text]
 doListQueues = withAWS $ do
     result <- send $ listQueues
     return $ result ^. lqrsQueueURLs
 
-doCreateQueue :: QueueName -> AWSInfo -> IO ()
+doCreateQueue :: QueueName -> AWSAction ()
 doCreateQueue (QueueName queueName) = withAWS (void $ send $ createQueue queueName)
 
-doGetQueueURL :: QueueName -> AWSInfo -> IO (Maybe QueueURL)
+doGetQueueURL :: QueueName -> AWSAction (Maybe QueueURL)
 doGetQueueURL (QueueName queueName) = withAWS $ do
     handling _QueueDoesNotExist (const (pure Nothing)) $ do
         result <- send $ getQueueURL queueName
         return $ Just (QueueURL $ result ^. gqursQueueURL)
 
-doSendMessage :: QueueURL -> Text -> AWSInfo -> IO ()
+doSendMessage :: QueueURL -> Text -> AWSAction ()
 doSendMessage (QueueURL s) m = withAWS $ do
     void $ send $ sendMessage s m
 
-doReceiveMessage :: QueueURL -> AWSInfo -> IO (Maybe Text)
+doReceiveMessage :: QueueURL -> AWSAction (Maybe Text)
 doReceiveMessage (QueueURL s) = withAWS $ do
     result <- send $ receiveMessage s
     case result ^. rmrsMessages of
@@ -69,8 +69,8 @@ main :: IO ()
 main = do
     let queueName = QueueName "my-queue"
 
-    awsInfo <- getAWSInfo $ (awsConfig (Local "localhost" 4576) sqs)
-                                { acLoggingState = LoggingDisabled }
+    awsInfo <- getAWSConnection $ (awsConfig (Local "localhost" 4576) sqs)
+                                    { acLoggingState = LoggingDisabled }
 
     putStrLn "CreateQueue"
     doCreateQueue queueName awsInfo
