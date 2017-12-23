@@ -14,9 +14,11 @@ module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
-                    ( AWSInfo
+                    ( AWSConfig(..)
+                    , AWSInfo
                     , LoggingState(..)
                     , ServiceEndpoint(..)
+                    , awsConfig
                     , getAWSInfo
                     , intToText
                     , parseInt
@@ -68,7 +70,8 @@ data DynamoDBInfo = DynamoDBInfo
 
 getDynamoDBInfo :: LoggingState -> ServiceEndpoint -> IO DynamoDBInfo
 getDynamoDBInfo loggingState serviceEndpoint = do
-    aws <- getAWSInfo loggingState serviceEndpoint dynamoDB
+    aws <- getAWSInfo $ (awsConfig serviceEndpoint dynamoDB)
+                            { acLoggingState = loggingState }
     return $ DynamoDBInfo aws "table"
 
 -- Creates a table in DynamoDB and waits until table is in active state

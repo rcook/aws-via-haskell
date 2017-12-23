@@ -3,12 +3,16 @@
 --------------------------------------------------
 
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module AWSViaHaskell.AWSInfo
-    ( AWSInfo(..)
+    ( AWSAction
+    , AWSConfig(..)
+    , AWSInfo(..)
     , LoggingState(..)
     , ServiceEndpoint(..)
+    , awsConfig
     , getAWSInfo
     , withAWS
     , withAWS'
@@ -40,9 +44,18 @@ import           Network.AWS
                     )
 import           System.IO (stdout)
 
+type AWSAction a = AWSInfo -> IO a
+
 type HostName = ByteString
 
 type Port = Int
+
+data AWSConfig = AWSConfig
+    { acServiceEndpoint :: ServiceEndpoint
+    , acService :: Service
+    , acLoggingState :: LoggingState
+    , acCredentials :: Credentials
+    }
 
 data AWSInfo = AWSInfo
     { env :: Env
@@ -54,18 +67,21 @@ data LoggingState = LoggingEnabled | LoggingDisabled
 
 data ServiceEndpoint = AWS Region | Local HostName Port
 
-getAWSInfo :: LoggingState -> ServiceEndpoint -> Service -> IO AWSInfo
-getAWSInfo loggingState serviceEndpoint service = do
-    e <- getEnv loggingState
-    let (r, s) = regionService serviceEndpoint service
+awsConfig :: ServiceEndpoint -> Service -> AWSConfig
+awsConfig serviceEndpoint service = AWSConfig serviceEndpoint service LoggingDisabled Discover
+
+getAWSInfo :: AWSConfig -> IO AWSInfo
+getAWSInfo AWSConfig{..} = do
+    e <- mkEnv acLoggingState acCredentials
+    let (r, s) = regionService acServiceEndpoint acService
     return $ AWSInfo e r s
     where
         -- Standard discovery mechanism for credentials, log to standard output
-        getEnv LoggingEnabled = do
+        mkEnv LoggingEnabled c = do
             logger <- newLogger Debug stdout
-            newEnv Discover <&> set envLogger logger
+            newEnv c <&> set envLogger logger
         -- Standard discovery mechanism for credentials, no logging
-        getEnv LoggingDisabled = newEnv Discover
+        mkEnv LoggingDisabled c = newEnv c
 
         -- Run against a DynamoDB instance running on AWS in specified region
         regionService (AWS region) s = (region, s)

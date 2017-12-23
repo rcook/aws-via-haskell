@@ -8,6 +8,14 @@
 module Main (main) where
 
 import           AWSViaHaskell
+                    ( AWSConfig(..)
+                    , AWSInfo(..)
+                    , LoggingState(..)
+                    , ServiceEndpoint(..)
+                    , awsConfig
+                    , getAWSInfo
+                    , withAWS'
+                    )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)
@@ -53,7 +61,8 @@ data S3Info = S3Info
 
 getS3Info :: LoggingState -> ServiceEndpoint -> IO S3Info
 getS3Info loggingState serviceEndpoint = do
-    aws <- getAWSInfo loggingState serviceEndpoint s3
+    aws <- getAWSInfo $ (awsConfig serviceEndpoint s3)
+                            { acLoggingState = loggingState }
     return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
 
 doCreateBucketIfNotExists :: S3Info -> IO ()

@@ -7,9 +7,11 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSInfo(..)
+                    ( AWSAction
+                    , AWSConfig(..)
                     , LoggingState(..)
                     , ServiceEndpoint(..)
+                    , awsConfig
                     , getAWSInfo
                     , withAWS
                     )
@@ -57,8 +59,6 @@ import           Network.AWS.STS
                     , sts
                     )
 
-type AWSAction a = AWSInfo -> IO a
-
 newtype AccountID = AccountID Text deriving Show
 
 newtype FunctionName = FunctionName Text deriving Show
@@ -99,8 +99,13 @@ lambdaBasicExecutionRole (AccountID s) = Role $ Text.toStrict (format "arn:aws:i
 
 main :: IO ()
 main = do
+    let stsConfig = (awsConfig (AWS Ohio) sts)
+                        { acLoggingState = LoggingDisabled }
+        lambdaConfig = (awsConfig (AWS Ohio) lambda)
+                        { acLoggingState = LoggingDisabled }
+
     -- Use real AWS STS
-    stsInfo <- getAWSInfo LoggingDisabled (AWS Ohio) sts
+    stsInfo <- getAWSInfo stsConfig
     -- Use localstack
     --stsInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4574) sts
 
@@ -111,7 +116,7 @@ main = do
     print role
 
     -- Use real AWS Lambda
-    lambdaInfo <- getAWSInfo LoggingDisabled (AWS Ohio) lambda
+    lambdaInfo <- getAWSInfo lambdaConfig
     -- Use localstack
     --lambdaInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4574) lambda
 

@@ -7,9 +7,11 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSInfo
+                    ( AWSConfig(..)
+                    , AWSInfo
                     , LoggingState(..)
                     , ServiceEndpoint(..)
+                    , awsConfig
                     , getAWSInfo
                     , withAWS
                     )
@@ -67,7 +69,8 @@ main :: IO ()
 main = do
     let queueName = QueueName "my-queue"
 
-    awsInfo <- getAWSInfo LoggingDisabled (Local "localhost" 4576) sqs
+    awsInfo <- getAWSInfo $ (awsConfig (Local "localhost" 4576) sqs)
+                                { acLoggingState = LoggingDisabled }
 
     putStrLn "CreateQueue"
     doCreateQueue queueName awsInfo
