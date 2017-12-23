@@ -17,14 +17,16 @@ module AWSViaHaskell.AWSInfo
 import           Control.Lens ((<&>), set)
 import           Control.Monad.Trans.AWS
                     ( AWST'
+                    , reconfigure
                     , runAWST
+                    , within
                     )
 import           Control.Monad.Trans.Resource
                     ( MonadBaseControl
                     , ResourceT
                     )
 import           Data.ByteString (ByteString)
-import           Control.Monad.Trans.AWS
+import           Network.AWS
                     ( Credentials(..)
                     , Env
                     , LogLevel(..)
@@ -33,10 +35,8 @@ import           Control.Monad.Trans.AWS
                     , envLogger
                     , newEnv
                     , newLogger
-                    , reconfigure
                     , runResourceT
                     , setEndpoint
-                    , within
                     )
 import           System.IO (stdout)
 
