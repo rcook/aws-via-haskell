@@ -24,8 +24,11 @@ import           Codec.Archive.Zip
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void)
+import           Data.Aeson (Value(..))
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as ByteString (toStrict)
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap (fromList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           Data.Text.Format
@@ -50,6 +53,8 @@ import           Network.AWS.Lambda
                     , fcFunctionName
                     , fcZipFile
                     , functionCode
+                    , invoke
+                    , irsPayload
                     , lambda
                     , listFunctions
                     , lfrsFunctions
@@ -69,6 +74,8 @@ newtype FunctionName = FunctionName Text deriving Show
 newtype Role = Role Text deriving Show
 
 newtype Handler = Handler Text deriving Show
+
+type Payload = HashMap Text Value
 
 doGetAccountID :: AWSAction (Maybe AccountID)
 doGetAccountID = withAWS $ do
@@ -100,6 +107,11 @@ doCreateFunctionIfNotExists :: FunctionName -> Runtime -> Role -> Handler -> Fun
 doCreateFunctionIfNotExists (FunctionName fn) rt (Role r) (Handler h) fc = withAWS $ do
     handling _ResourceConflictException (const (pure ())) $ do
         void $ send $ createFunction fn rt r h fc
+
+doInvoke :: FunctionName -> Payload -> AWSAction (Maybe Payload)
+doInvoke (FunctionName fn) payload = withAWS $ do
+    result <- send $ invoke fn payload
+    return $ result ^. irsPayload
 
 main :: IO ()
 main = do
@@ -148,3 +160,7 @@ main = do
         case mbName of
             Just name -> putStrLn $ "  " <> show name
             Nothing -> Text.putStrLn $ "  (unnamed)"
+
+    putStrLn "Invoke"
+    result <- doInvoke fn (HashMap.fromList [ ("x", Number 10), ("y", Number 25) ]) lambdaInfo
+    print result
