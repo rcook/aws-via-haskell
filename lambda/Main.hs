@@ -36,7 +36,8 @@ import qualified Data.Text.Lazy as Text (toStrict)
 import qualified Data.Text.IO as Text (putStrLn)
 import           Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
 import           Network.AWS
-                    ( Region(..)
+                    ( Credentials(..)
+                    , Region(..)
                     , send
                     )
 import           Network.AWS.Lambda
@@ -58,6 +59,8 @@ import           Network.AWS.STS
                     , getCallerIdentity
                     , sts
                     )
+import           System.Directory (getHomeDirectory)
+import           System.FilePath ((</>))
 
 newtype AccountID = AccountID Text deriving Show
 
@@ -71,6 +74,17 @@ doGetAccountID :: AWSAction (Maybe AccountID)
 doGetAccountID = withAWS $ do
     result <- send getCallerIdentity
     return $ AccountID <$> result ^. gcirsAccount
+
+-- Must have a role named "lambda_basic_execution" with AWSLambdaBasicExecutionRole policy attached
+lambdaBasicExecutionRole :: AccountID -> Role
+lambdaBasicExecutionRole (AccountID s) = Role $ Text.toStrict (format "arn:aws:iam::{}:role/lambda_basic_execution" $ Only s)
+
+zipFunctionCode :: FilePath -> POSIXTime -> ByteString -> FunctionCode
+zipFunctionCode path timestamp sourceCode =
+    let entry = toEntry path (floor timestamp) sourceCode
+        archive = entry `addEntryToArchive` emptyArchive
+        bytes = ByteString.toStrict $ fromArchive archive
+    in functionCode & fcZipFile .~ Just bytes
 
 doListFunctions :: AWSAction [Maybe FunctionName]
 doListFunctions = withAWS $ do
@@ -87,22 +101,16 @@ doCreateFunctionIfNotExists (FunctionName fn) rt (Role r) (Handler h) fc = withA
     handling _ResourceConflictException (const (pure ())) $ do
         void $ send $ createFunction fn rt r h fc
 
-zipFunctionCode :: FilePath -> POSIXTime -> ByteString -> FunctionCode
-zipFunctionCode path timestamp sourceCode =
-    let entry = toEntry path (floor timestamp) sourceCode
-        archive = entry `addEntryToArchive` emptyArchive
-        bytes = ByteString.toStrict $ fromArchive archive
-    in functionCode & fcZipFile .~ Just bytes
-
-lambdaBasicExecutionRole :: AccountID -> Role
-lambdaBasicExecutionRole (AccountID s) = Role $ Text.toStrict (format "arn:aws:iam::{}:role/lambda_basic_execution" $ Only s)
-
 main :: IO ()
 main = do
-    let stsConfig = (awsConfig (AWS Ohio) sts)
-                        { acLoggingState = LoggingDisabled }
-        lambdaConfig = (awsConfig (AWS Ohio) lambda)
-                        { acLoggingState = LoggingDisabled }
+    homeDir <- getHomeDirectory
+    let serviceEndpoint = AWS Ohio
+        loggingState = LoggingDisabled
+        credentials = FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials"
+        stsConfig = (awsConfig serviceEndpoint sts)
+                        { acCredentials = credentials, acLoggingState = loggingState }
+        lambdaConfig = (awsConfig serviceEndpoint lambda)
+                        { acCredentials = credentials, acLoggingState = loggingState }
 
     -- Use real AWS STS
     stsInfo <- getAWSConnection stsConfig
@@ -132,7 +140,7 @@ main = do
         \    return { \"result\" : x + y }"
 
     putStrLn "CreateFunction"
-    doCreateFunctionIfNotExists fn PYTHON2_7 role (Handler "add_handler") fc lambdaInfo
+    doCreateFunctionIfNotExists fn PYTHON2_7 role (Handler "add_handler.add_handler") fc lambdaInfo
 
     putStrLn "ListFunctions"
     names <- doListFunctions lambdaInfo

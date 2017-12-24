@@ -71,6 +71,8 @@ executable lambda-app
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , bytestring
+                                          , directory
+                                          , filepath
                                           , lens
                                           , text
                                           , text-format
