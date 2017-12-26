@@ -2,20 +2,29 @@
 -- Copyright (C) 2017, All rights reserved.
 --------------------------------------------------
 
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module AWSViaHaskell.AWSInfo
     ( AWSAction
     , AWSConfig(..)
+    , AWSConfig'(..)
     , AWSConnection(..)
     , LoggingState(..)
+    , ServiceClass(..)
     , ServiceEndpoint(..)
+    , SessionClass(..)
     , awsConfig
+    , connect
     , getAWSConnection
     , withAWS
     , withAWS'
+    , withAWSTyped
     ) where
 
 import           Control.Lens ((<&>), set)
@@ -101,3 +110,34 @@ withAWS' :: MonadBaseControl IO m =>
     -> AWST' Env (ResourceT m) a
     -> m a
 withAWS' = flip withAWS
+
+class ServiceClass a where
+    type TypedSession a :: *
+    rawService :: a -> Service
+    wrappedSession :: AWSConnection -> TypedSession a
+
+class SessionClass a where
+    rawSession :: a -> AWSConnection
+
+data AWSConfig' = AWSConfig'
+    { acServiceEndpoint' :: ServiceEndpoint
+    , acLoggingState' :: LoggingState
+    , acCredentials' :: Credentials
+    }
+
+connect :: forall a . ServiceClass a => AWSConfig' -> a -> IO (TypedSession a)
+connect AWSConfig'{..} service = do
+    let serviceRaw = rawService service
+    --session' <- getAWSConnection undefined
+    let awsConfig' = AWSConfig acServiceEndpoint' serviceRaw acLoggingState' acCredentials'
+    session' <- getAWSConnection awsConfig'
+    let session = wrappedSession @a session'
+    return session
+
+withAWSTyped :: (MonadBaseControl IO m, SessionClass b) =>
+    AWST' Env (ResourceT m) a
+    -> b
+    -> m a
+withAWSTyped action session =
+    let sessionRaw = rawSession session
+    in withAWS action sessionRaw
