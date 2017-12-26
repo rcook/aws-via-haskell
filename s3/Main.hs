@@ -4,17 +4,19 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
+                    ( AWSConfig'(..)
                     , AWSConnection(..)
                     , LoggingState(..)
+                    , ServiceClass(..)
                     , ServiceEndpoint(..)
-                    , awsConfig
-                    , getAWSConnection
-                    , withAWS'
+                    , SessionClass(..)
+                    , connect
+                    , withAWSTyped
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -25,7 +27,9 @@ import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
-                    ( Region(..)
+                    ( Credentials(..)
+                    , Region(..)
+                    , Service
                     , await
                     , send
                     , sinkBody
@@ -54,70 +58,73 @@ import           Network.AWS.S3
                     , s3
                     )
 
-data S3Info = S3Info
-    { aws :: AWSConnection
-    , bucketName :: BucketName
-    }
+data S3Service = S3Service Service
 
-getS3Info :: LoggingState -> ServiceEndpoint -> IO S3Info
-getS3Info loggingState serviceEndpoint = do
-    aws <- getAWSConnection $ (awsConfig serviceEndpoint s3)
-                            { acLoggingState = loggingState }
-    return $ S3Info aws "rcook456dac3a5a0e4aeba1b3238306916a31"
+instance ServiceClass S3Service where
+    type TypedSession S3Service = S3Session
+    rawService (S3Service raw) = raw
+    wrappedSession = S3Session
 
-doCreateBucketIfNotExists :: S3Info -> IO ()
-doCreateBucketIfNotExists S3Info{..} = withAWS' aws $ do
+data S3Session = S3Session AWSConnection
+
+instance SessionClass S3Session where
+    rawSession (S3Session raw) = raw
+
+s3Service :: S3Service
+s3Service = S3Service s3
+
+doCreateBucketIfNotExists :: BucketName -> S3Session -> IO ()
+doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withAWSTyped) s3Session $ do
     let cbc = createBucketConfiguration
-                & cbcLocationConstraint .~ Just (LocationConstraint (acxRegion aws))
+                & cbcLocationConstraint .~ Just (LocationConstraint (acxRegion session))
     newlyCreated <- handling _BucketAlreadyOwnedByYou (const (pure False)) $ do
         void $ send $ createBucket bucketName
                         & cbCreateBucketConfiguration .~ Just cbc
         return True
     when newlyCreated (void $ await bucketExists (headBucket bucketName))
 
-doListBuckets :: S3Info -> IO [BucketName]
-doListBuckets S3Info{..} = withAWS' aws $ do
+doListBuckets :: S3Session -> IO [BucketName]
+doListBuckets = withAWSTyped $ do
     result <- send $ listBuckets
     return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
-doPutObject :: S3Info -> IO ()
-doPutObject S3Info{..} = withAWS' aws $ do
+doPutObject :: BucketName -> S3Session -> IO ()
+doPutObject bucketName = withAWSTyped $ do
     void $ send $ putObject bucketName "object-key" "object-bytes"
 
-doListObjects :: S3Info -> IO [ObjectKey]
-doListObjects S3Info{..} = withAWS' aws $ do
+doListObjects :: BucketName -> S3Session -> IO [ObjectKey]
+doListObjects bucketName = withAWSTyped $ do
     result <- send $ listObjectsV bucketName
     return $ [ x ^. oKey | x <- result ^. lrsContents ]
 
-doGetObject :: S3Info -> IO ByteString
-doGetObject S3Info{..} = withAWS' aws $ do
+doGetObject :: BucketName -> S3Session -> IO ByteString
+doGetObject bucketName = withAWSTyped $ do
     result <- send $ getObject bucketName "object-key"
     (result ^. gorsBody) `sinkBody` sinkLbs
 
 main :: IO ()
 main = do
-    -- Use the real thing
-    s3Info <- getS3Info LoggingDisabled (AWS Ohio)
+    let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
-    -- localstack by default exposes its S3 service on port 4572
-    --s3Info <- getS3Info LoggingDisabled (Local "localhost" 4572)
+    s3Session <- connect (AWSConfig' (AWS Ohio) LoggingDisabled Discover) s3Service
+    --s3Session <- connect (AWSConfig' (Local "localhost" 4572) LoggingDisabled Discover) s3Service
 
     putStrLn "CreateBucket"
-    doCreateBucketIfNotExists s3Info
+    doCreateBucketIfNotExists bucketName s3Session
 
     putStrLn "ListBuckets"
-    bucketNames <- doListBuckets s3Info
+    bucketNames <- doListBuckets s3Session
     forM_ bucketNames $ \n ->
         Text.putStrLn $ "  " <> toText n
 
     putStrLn "PutObject"
-    doPutObject s3Info
+    doPutObject bucketName s3Session
 
     putStrLn "ListObjects"
-    objectKeys <- doListObjects s3Info
+    objectKeys <- doListObjects bucketName s3Session
     forM_ objectKeys $ \k ->
         Text.putStrLn $ "  " <> toText k
 
     putStrLn "GetObject"
-    content <- doGetObject s3Info
+    content <- doGetObject bucketName s3Session
     ByteString.putStrLn $ "  " <> content
