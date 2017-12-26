@@ -11,20 +11,14 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module AWSViaHaskell.AWSInfo
-    ( AWSAction
-    , AWSConfig(..)
-    , AWSConfig'(..)
+    ( AWSConfig(..)
     , AWSConnection(..)
     , LoggingState(..)
     , ServiceClass(..)
     , ServiceEndpoint(..)
     , SessionClass(..)
-    , awsConfig
     , connect
-    , getAWSConnection
     , withAWS
-    , withAWS'
-    , withAWSTyped
     ) where
 
 import           Control.Lens ((<&>), set)
@@ -53,18 +47,9 @@ import           Network.AWS
                     )
 import           System.IO (stdout)
 
-type AWSAction a = AWSConnection -> IO a
-
 type HostName = ByteString
 
 type Port = Int
-
-data AWSConfig = AWSConfig
-    { acServiceEndpoint :: ServiceEndpoint
-    , acService :: Service
-    , acLoggingState :: LoggingState
-    , acCredentials :: Credentials
-    }
 
 data AWSConnection = AWSConnection
     { acxEnv :: Env
@@ -76,11 +61,29 @@ data LoggingState = LoggingEnabled | LoggingDisabled
 
 data ServiceEndpoint = AWS Region | Local HostName Port
 
-awsConfig :: ServiceEndpoint -> Service -> AWSConfig
-awsConfig serviceEndpoint service = AWSConfig serviceEndpoint service LoggingDisabled Discover
+class ServiceClass a where
+    type TypedSession a :: *
+    rawService :: a -> Service
+    wrappedSession :: AWSConnection -> TypedSession a
 
-getAWSConnection :: AWSConfig -> IO AWSConnection
-getAWSConnection AWSConfig{..} = do
+class SessionClass a where
+    rawSession :: a -> AWSConnection
+
+data AWSConfig = AWSConfig
+    { acServiceEndpoint :: ServiceEndpoint
+    , acLoggingState :: LoggingState
+    , acCredentials :: Credentials
+    }
+
+connect :: forall a . ServiceClass a => AWSConfig -> a -> IO (TypedSession a)
+connect AWSConfig{..} service = do
+    let serviceRaw = rawService service
+    session' <- getAWSConnection acServiceEndpoint serviceRaw acLoggingState acCredentials
+    let session = wrappedSession @a session'
+    return session
+
+getAWSConnection :: ServiceEndpoint -> Service -> LoggingState -> Credentials -> IO AWSConnection
+getAWSConnection acServiceEndpoint acService acLoggingState acCredentials = do
     e <- mkEnv acLoggingState acCredentials
     let (r, s) = regionService acServiceEndpoint acService
     return $ AWSConnection e r s
@@ -97,47 +100,12 @@ getAWSConnection AWSConfig{..} = do
         -- Run against a local DynamoDB instance on a given host and port
         regionService (Local hostName port) s = (NorthVirginia, setEndpoint False hostName port s)
 
-withAWS :: MonadBaseControl IO m =>
-    AWST' Env (ResourceT m) a
-    -> AWSConnection
-    -> m a
-withAWS action AWSConnection{..} =
-    runResourceT . runAWST acxEnv . within acxRegion $ do
-        reconfigure acxService action
-
-withAWS' :: MonadBaseControl IO m =>
-    AWSConnection
-    -> AWST' Env (ResourceT m) a
-    -> m a
-withAWS' = flip withAWS
-
-class ServiceClass a where
-    type TypedSession a :: *
-    rawService :: a -> Service
-    wrappedSession :: AWSConnection -> TypedSession a
-
-class SessionClass a where
-    rawSession :: a -> AWSConnection
-
-data AWSConfig' = AWSConfig'
-    { acServiceEndpoint' :: ServiceEndpoint
-    , acLoggingState' :: LoggingState
-    , acCredentials' :: Credentials
-    }
-
-connect :: forall a . ServiceClass a => AWSConfig' -> a -> IO (TypedSession a)
-connect AWSConfig'{..} service = do
-    let serviceRaw = rawService service
-    --session' <- getAWSConnection undefined
-    let awsConfig' = AWSConfig acServiceEndpoint' serviceRaw acLoggingState' acCredentials'
-    session' <- getAWSConnection awsConfig'
-    let session = wrappedSession @a session'
-    return session
-
-withAWSTyped :: (MonadBaseControl IO m, SessionClass b) =>
+withAWS :: (MonadBaseControl IO m, SessionClass b) =>
     AWST' Env (ResourceT m) a
     -> b
     -> m a
-withAWSTyped action session =
-    let sessionRaw = rawSession session
-    in withAWS action sessionRaw
+withAWS action session =
+    let AWSConnection{..} = rawSession session
+    in
+        runResourceT . runAWST acxEnv . within acxRegion $ do
+            reconfigure acxService action

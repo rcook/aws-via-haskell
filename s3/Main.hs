@@ -9,14 +9,14 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig'(..)
+                    ( AWSConfig(..)
                     , AWSConnection(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
                     , connect
-                    , withAWSTyped
+                    , withAWS
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -74,7 +74,7 @@ s3Service :: S3Service
 s3Service = S3Service s3
 
 doCreateBucketIfNotExists :: BucketName -> S3Session -> IO ()
-doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withAWSTyped) s3Session $ do
+doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withAWS) s3Session $ do
     let cbc = createBucketConfiguration
                 & cbcLocationConstraint .~ Just (LocationConstraint (acxRegion session))
     newlyCreated <- handling _BucketAlreadyOwnedByYou (const (pure False)) $ do
@@ -84,21 +84,21 @@ doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withA
     when newlyCreated (void $ await bucketExists (headBucket bucketName))
 
 doListBuckets :: S3Session -> IO [BucketName]
-doListBuckets = withAWSTyped $ do
+doListBuckets = withAWS $ do
     result <- send $ listBuckets
     return $ [ x ^. bName | x <- result ^. lbrsBuckets ]
 
 doPutObject :: BucketName -> S3Session -> IO ()
-doPutObject bucketName = withAWSTyped $ do
+doPutObject bucketName = withAWS $ do
     void $ send $ putObject bucketName "object-key" "object-bytes"
 
 doListObjects :: BucketName -> S3Session -> IO [ObjectKey]
-doListObjects bucketName = withAWSTyped $ do
+doListObjects bucketName = withAWS $ do
     result <- send $ listObjectsV bucketName
     return $ [ x ^. oKey | x <- result ^. lrsContents ]
 
 doGetObject :: BucketName -> S3Session -> IO ByteString
-doGetObject bucketName = withAWSTyped $ do
+doGetObject bucketName = withAWS $ do
     result <- send $ getObject bucketName "object-key"
     (result ^. gorsBody) `sinkBody` sinkLbs
 
@@ -106,8 +106,8 @@ main :: IO ()
 main = do
     let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
-    s3Session <- connect (AWSConfig' (AWS Ohio) LoggingDisabled Discover) s3Service
-    --s3Session <- connect (AWSConfig' (Local "localhost" 4572) LoggingDisabled Discover) s3Service
+    s3Session <- connect (AWSConfig (AWS Ohio) LoggingDisabled Discover) s3Service
+    --s3Session <- connect (AWSConfig (Local "localhost" 4572) LoggingDisabled Discover) s3Service
 
     putStrLn "CreateBucket"
     doCreateBucketIfNotExists bucketName s3Session

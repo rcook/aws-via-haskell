@@ -11,7 +11,7 @@ module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
-                    ( AWSConfig'(..)
+                    ( AWSConfig(..)
                     , AWSConnection
                     , LoggingState(..)
                     , ServiceClass(..)
@@ -20,7 +20,7 @@ import           AWSViaHaskell
                     , connect
                     , intToText
                     , parseInt
-                    , withAWSTyped
+                    , withAWS
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -82,7 +82,7 @@ ddbService = DDBService dynamoDB
 
 -- Creates a table in DynamoDB and waits until table is in active state
 doCreateTableIfNotExists :: TableName -> DDBSession -> IO ()
-doCreateTableIfNotExists (TableName tn) = withAWSTyped $ do
+doCreateTableIfNotExists (TableName tn) = withAWS $ do
     newlyCreated <- handling _ResourceInUseException (const (pure False)) $ do
         void $ send $ createTable
                         tn
@@ -94,7 +94,7 @@ doCreateTableIfNotExists (TableName tn) = withAWSTyped $ do
 
 -- Deletes a table in DynamoDB if it exists and waits until table no longer exists
 doDeleteTableIfExists :: TableName -> DDBSession -> IO ()
-doDeleteTableIfExists (TableName tn) = withAWSTyped $ do
+doDeleteTableIfExists (TableName tn) = withAWS $ do
     deleted <- handling _ResourceNotFoundException (const (pure False)) $ do
         void $ send $ deleteTable tn
         return True
@@ -102,7 +102,7 @@ doDeleteTableIfExists (TableName tn) = withAWSTyped $ do
 
 -- Puts an item into the DynamoDB table
 doPutItem :: TableName -> Int -> DDBSession -> IO ()
-doPutItem (TableName tn) value = withAWSTyped $ do
+doPutItem (TableName tn) value = withAWS $ do
     void $ send $ putItem tn
                     & piItem .~ item
     where item = HashMap.fromList
@@ -112,7 +112,7 @@ doPutItem (TableName tn) value = withAWSTyped $ do
 
 -- Updates an item in the DynamoDB table
 doUpdateItem :: TableName -> DDBSession -> IO ()
-doUpdateItem (TableName tn) = withAWSTyped $ do
+doUpdateItem (TableName tn) = withAWS $ do
     void $ send $ updateItem tn
                     & uiKey .~ key
                     & uiUpdateExpression .~ Just "ADD counter_value :increment"
@@ -127,7 +127,7 @@ doUpdateItem (TableName tn) = withAWSTyped $ do
 
 -- Gets an item from the DynamoDB table
 doGetItem :: TableName -> DDBSession -> IO (Maybe Int)
-doGetItem (TableName tn) = withAWSTyped $ do
+doGetItem (TableName tn) = withAWS $ do
     result <- send $ getItem tn
                         & giKey .~ key
     return $ do
@@ -142,7 +142,7 @@ main :: IO ()
 main = do
     let tableName = TableName "table"
 
-    ddbSession <- connect (AWSConfig' (Local "localhost" 8000) LoggingDisabled Discover) ddbService
+    ddbSession <- connect (AWSConfig (Local "localhost" 8000) LoggingDisabled Discover) ddbService
 
     putStrLn "DeleteTableIfExists"
     doDeleteTableIfExists tableName ddbSession

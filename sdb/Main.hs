@@ -8,14 +8,14 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig'(..)
+                    ( AWSConfig(..)
                     , AWSConnection
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
                     , connect
-                    , withAWSTyped
+                    , withAWS
                     )
 import           Control.Lens ((&), (^.), (.~))
 import           Control.Monad (forM_, void)
@@ -61,21 +61,21 @@ newtype DomainName = DomainName Text deriving Show
 newtype ItemName = ItemName Text deriving Show
 
 doCreateDomainIfNotExists :: DomainName -> SDBSession -> IO ()
-doCreateDomainIfNotExists (DomainName s) = withAWSTyped $ do
+doCreateDomainIfNotExists (DomainName s) = withAWS $ do
     void $ send $ createDomain s
 
 doListDomains :: SDBSession -> IO [DomainName]
-doListDomains = withAWSTyped $ do
+doListDomains = withAWS $ do
     result <- send $ listDomains
     return [ DomainName s | s <- result ^. ldrsDomainNames ]
 
 doPutAttributes :: DomainName -> ItemName -> [(Text, Text)] -> SDBSession -> IO ()
-doPutAttributes (DomainName sDN) (ItemName sIN) attrs = withAWSTyped $ do
+doPutAttributes (DomainName sDN) (ItemName sIN) attrs = withAWS $ do
     void $ send $ putAttributes sDN sIN
                     & paAttributes .~ map (uncurry replaceableAttribute) attrs
 
 doGetAttributes :: DomainName -> ItemName -> SDBSession -> IO [(Text, Text)]
-doGetAttributes (DomainName sDN) (ItemName sIN) = withAWSTyped $ do
+doGetAttributes (DomainName sDN) (ItemName sIN) = withAWS $ do
     result <- send $ getAttributes sDN sIN
     return [ (attr ^. aName, attr ^. aValue) | attr <- result ^. garsAttributes ]
 
@@ -85,7 +85,7 @@ main = do
         itemName = ItemName "my-item"
 
     -- Default port for simpledb-dev2
-    sdbSession <- connect (AWSConfig' (Local "localhost" 8080) LoggingDisabled Discover) sdbService
+    sdbSession <- connect (AWSConfig (Local "localhost" 8080) LoggingDisabled Discover) sdbService
 
     putStrLn "CreateDomain"
     doCreateDomainIfNotExists domainName sdbSession

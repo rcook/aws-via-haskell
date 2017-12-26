@@ -8,14 +8,14 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig'(..)
+                    ( AWSConfig(..)
                     , AWSConnection
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
                     , connect
-                    , withAWSTyped
+                    , withAWS
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.))
@@ -62,25 +62,25 @@ sqsService :: SQSService
 sqsService = SQSService sqs
 
 doListQueues :: SQSSession -> IO [Text]
-doListQueues = withAWSTyped $ do
+doListQueues = withAWS $ do
     result <- send $ listQueues
     return $ result ^. lqrsQueueURLs
 
 doCreateQueue :: QueueName -> SQSSession -> IO ()
-doCreateQueue (QueueName qn) = withAWSTyped (void $ send $ createQueue qn)
+doCreateQueue (QueueName qn) = withAWS (void $ send $ createQueue qn)
 
 doGetQueueURL :: QueueName -> SQSSession -> IO (Maybe QueueURL)
-doGetQueueURL (QueueName qn) = withAWSTyped $ do
+doGetQueueURL (QueueName qn) = withAWS $ do
     handling _QueueDoesNotExist (const (pure Nothing)) $ do
         result <- send $ getQueueURL qn
         return $ Just (QueueURL $ result ^. gqursQueueURL)
 
 doSendMessage :: QueueURL -> Text -> SQSSession -> IO ()
-doSendMessage (QueueURL s) m = withAWSTyped $ do
+doSendMessage (QueueURL s) m = withAWS $ do
     void $ send $ sendMessage s m
 
 doReceiveMessage :: QueueURL -> SQSSession -> IO (Maybe Text)
-doReceiveMessage (QueueURL s) = withAWSTyped $ do
+doReceiveMessage (QueueURL s) = withAWS $ do
     result <- send $ receiveMessage s
     case result ^. rmrsMessages of
         m : [] -> return $ m ^. mBody
@@ -90,7 +90,7 @@ main :: IO ()
 main = do
     let queueName = QueueName "my-queue"
 
-    sqsSession <- connect (AWSConfig' (Local "localhost" 4576) LoggingDisabled Discover) sqsService
+    sqsSession <- connect (AWSConfig (Local "localhost" 4576) LoggingDisabled Discover) sqsService
 
     putStrLn "CreateQueue"
     doCreateQueue queueName sqsSession

@@ -8,14 +8,14 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig'(..)
+                    ( AWSConfig(..)
                     , AWSConnection
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
                     , connect
-                    , withAWSTyped
+                    , withAWS
                     )
 import           Codec.Archive.Zip
                     ( addEntryToArchive
@@ -111,7 +111,7 @@ newtype Handler = Handler Text deriving Show
 type Payload = HashMap Text Value
 
 doGetAccountID :: STSSession -> IO (Maybe AccountID)
-doGetAccountID = withAWSTyped $ do
+doGetAccountID = withAWS $ do
     result <- send getCallerIdentity
     return $ AccountID <$> result ^. gcirsAccount
 
@@ -127,22 +127,22 @@ zipFunctionCode path timestamp sourceCode =
     in functionCode & fcZipFile .~ Just bytes
 
 doListFunctions :: LambdaSession -> IO [Maybe FunctionName]
-doListFunctions = withAWSTyped $ do
+doListFunctions = withAWS $ do
     result <- send $ listFunctions
     return [ FunctionName <$> f ^. fcFunctionName | f <- result ^. lfrsFunctions ]
 
 doDeleteFunctionIfExists :: FunctionName -> LambdaSession -> IO ()
-doDeleteFunctionIfExists (FunctionName fn) = withAWSTyped $ do
+doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
     handling (_ResourceNotFoundException) (const (pure ())) $ do
         void $ send $ deleteFunction fn
 
 doCreateFunctionIfNotExists :: FunctionName -> Runtime -> Role -> Handler -> FunctionCode -> LambdaSession -> IO ()
-doCreateFunctionIfNotExists (FunctionName fn) rt (Role r) (Handler h) fc = withAWSTyped $ do
+doCreateFunctionIfNotExists (FunctionName fn) rt (Role r) (Handler h) fc = withAWS $ do
     handling _ResourceConflictException (const (pure ())) $ do
         void $ send $ createFunction fn rt r h fc
 
 doInvoke :: FunctionName -> Payload -> LambdaSession -> IO (Maybe Payload)
-doInvoke (FunctionName fn) payload = withAWSTyped $ do
+doInvoke (FunctionName fn) payload = withAWS $ do
     result <- send $ invoke fn payload
     return $ result ^. irsPayload
 
@@ -152,9 +152,10 @@ main = do
     let serviceEndpoint = AWS Ohio
         loggingState = LoggingDisabled
         credentials = FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials"
+        config = AWSConfig serviceEndpoint loggingState credentials
 
-    stsSession <- connect (AWSConfig' serviceEndpoint loggingState credentials) stsService
-    lambdaSession <- connect (AWSConfig' serviceEndpoint loggingState credentials) lambdaService
+    stsSession <- connect config stsService
+    lambdaSession <- connect config lambdaService
 
     -- Get AWS account ID
     -- TODO: Deliberately blow up if we don't have one!
