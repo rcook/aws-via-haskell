@@ -3,25 +3,30 @@
 --------------------------------------------------
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSAction
-                    , AWSConfig(..)
+                    ( AWSConfig'(..)
                     , AWSConnection
                     , LoggingState(..)
+                    , ServiceClass(..)
                     , ServiceEndpoint(..)
-                    , awsConfig
-                    , getAWSConnection
-                    , withAWS
+                    , SessionClass(..)
+                    , connect
+                    , withAWSTyped
                     )
 import           Control.Lens ((&), (^.), (.~))
 import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text
-import           Network.AWS (send)
+import           Network.AWS
+                    ( Credentials(..)
+                    , Service
+                    , send
+                    )
 import           Network.AWS.SDB
                     ( aName
                     , aValue
@@ -36,50 +41,64 @@ import           Network.AWS.SDB
                     , sdb
                     )
 
+data SDBService = SDBService Service
+
+instance ServiceClass SDBService where
+    type TypedSession SDBService = SDBSession
+    rawService (SDBService raw) = raw
+    wrappedSession = SDBSession
+
+data SDBSession = SDBSession AWSConnection
+
+instance SessionClass SDBSession where
+    rawSession (SDBSession raw) = raw
+
+sdbService :: SDBService
+sdbService = SDBService sdb
+
 newtype DomainName = DomainName Text deriving Show
 
 newtype ItemName = ItemName Text deriving Show
 
-doCreateDomainIfNotExists :: DomainName -> AWSAction ()
-doCreateDomainIfNotExists (DomainName s) = withAWS $ do
+doCreateDomainIfNotExists :: DomainName -> SDBSession -> IO ()
+doCreateDomainIfNotExists (DomainName s) = withAWSTyped $ do
     void $ send $ createDomain s
 
-doListDomains :: AWSAction [DomainName]
-doListDomains = withAWS $ do
+doListDomains :: SDBSession -> IO [DomainName]
+doListDomains = withAWSTyped $ do
     result <- send $ listDomains
     return [ DomainName s | s <- result ^. ldrsDomainNames ]
 
-doPutAttributes :: DomainName -> ItemName -> [(Text, Text)] -> AWSAction ()
-doPutAttributes (DomainName sDN) (ItemName sIN) attrs = withAWS $ do
+doPutAttributes :: DomainName -> ItemName -> [(Text, Text)] -> SDBSession -> IO ()
+doPutAttributes (DomainName sDN) (ItemName sIN) attrs = withAWSTyped $ do
     void $ send $ putAttributes sDN sIN
                     & paAttributes .~ map (uncurry replaceableAttribute) attrs
 
-doGetAttributes :: DomainName -> ItemName -> AWSAction [(Text, Text)]
-doGetAttributes (DomainName sDN) (ItemName sIN) = withAWS $ do
+doGetAttributes :: DomainName -> ItemName -> SDBSession -> IO [(Text, Text)]
+doGetAttributes (DomainName sDN) (ItemName sIN) = withAWSTyped $ do
     result <- send $ getAttributes sDN sIN
     return [ (attr ^. aName, attr ^. aValue) | attr <- result ^. garsAttributes ]
 
 main :: IO ()
 main = do
-    -- Default port for simpledb-dev2
-    awsInfo <- getAWSConnection $ (awsConfig (Local "localhost" 8080) sdb)
-                                    { acLoggingState = LoggingDisabled }
-
     let domainName = DomainName "my-domain"
         itemName = ItemName "my-item"
 
+    -- Default port for simpledb-dev2
+    sdbSession <- connect (AWSConfig' (Local "localhost" 8080) LoggingDisabled Discover) sdbService
+
     putStrLn "CreateDomain"
-    doCreateDomainIfNotExists domainName awsInfo
+    doCreateDomainIfNotExists domainName sdbSession
 
     putStrLn "ListDomains"
-    domainNames <- doListDomains awsInfo
+    domainNames <- doListDomains sdbSession
     forM_ domainNames $ \dn ->
         putStrLn $ "  " <> show dn
 
     putStrLn "PutAttributes"
-    doPutAttributes domainName itemName [ ("1", "aaa"), ("2", "bbb") ] awsInfo
+    doPutAttributes domainName itemName [ ("1", "aaa"), ("2", "bbb") ] sdbSession
 
     putStrLn "GetAttributes"
-    attrs <- doGetAttributes domainName itemName awsInfo
+    attrs <- doGetAttributes domainName itemName sdbSession
     forM_ attrs $ \(k, v) ->
         Text.putStrLn $ "  " <> k <> " = " <> v
