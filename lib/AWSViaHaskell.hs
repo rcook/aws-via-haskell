@@ -3,9 +3,9 @@
 --------------------------------------------------
 
 module AWSViaHaskell
-    ( module AWSViaHaskell.AWS
+    ( module AWSViaHaskell.AWSService
     , module AWSViaHaskell.Util
     ) where
 
-import           AWSViaHaskell.AWS
+import           AWSViaHaskell.AWSService
 import           AWSViaHaskell.Util

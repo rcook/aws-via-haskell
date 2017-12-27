@@ -106,7 +106,7 @@ main = do
     let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
     s3Session <- connect
-                    (config (AWS Ohio))
+                    (config (AWSRegion Ohio))
                     --(Config (Local "localhost" 4572) LoggingDisabled Discover)
                     s3Service
 

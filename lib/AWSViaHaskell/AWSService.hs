@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module AWSViaHaskell.AWS
+module AWSViaHaskell.AWSService
     ( Config
     , Endpoint(..)
     , Logging(..)
@@ -68,7 +68,7 @@ makeLenses ''Session
 
 data Logging = LoggingEnabled | LoggingDisabled
 
-data Endpoint = AWS Region | Local HostName Port
+data Endpoint = AWSRegion Region | Local HostName Port
 
 data Config = Config
     { _cEndpoint :: Endpoint
@@ -107,7 +107,7 @@ mkEnv LoggingDisabled c = newEnv c
 
 regionService :: Endpoint -> Service -> (Region, Service)
 -- Run against a DynamoDB instance running on AWS in specified region
-regionService (AWS region) s = (region, s)
+regionService (AWSRegion region) s = (region, s)
 -- Run against a local DynamoDB instance on a given host and port
 regionService (Local hostName port) s = (NorthVirginia, setEndpoint False hostName port s)
 

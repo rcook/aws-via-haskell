@@ -9,10 +9,12 @@ module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
+                    , Logging(..)
                     , ServiceClass(..)
                     , Session
                     , SessionClass(..)
                     , cCredentials
+                    , cLogging
                     , config
                     , connect
                     , withAWS
@@ -46,6 +48,12 @@ import           Network.AWS
                     , Service
                     , send
                     )
+import           Network.AWS.IAM
+                    ( createRole
+                    , crrsRole
+                    , iam
+                    , rARN
+                    )
 import           Network.AWS.Lambda
                     ( _ResourceConflictException
                     , _ResourceNotFoundException
@@ -69,6 +77,20 @@ import           Network.AWS.STS
                     )
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
+
+-- TODO: Figure out how to reduce the class instance boilerplate!
+
+data IAMService = IAMService Service
+
+instance ServiceClass IAMService where
+    type TypedSession IAMService = IAMSession
+    rawService (IAMService raw) = raw
+    wrappedSession = IAMSession
+
+data IAMSession = IAMSession Session
+
+instance SessionClass IAMSession where
+    rawSession (IAMSession raw) = raw
 
 data STSService = STSService Service
 
@@ -94,6 +116,9 @@ data LambdaSession = LambdaSession Session
 instance SessionClass LambdaSession where
     rawSession (LambdaSession raw) = raw
 
+iamService :: IAMService
+iamService = IAMService iam
+
 stsService :: STSService
 stsService = STSService sts
 
@@ -102,9 +127,15 @@ lambdaService = LambdaService lambda
 
 newtype AccountID = AccountID Text deriving Show
 
+newtype ARN = ARN Text deriving Show
+
 newtype FunctionName = FunctionName Text deriving Show
 
-newtype Role = Role Text deriving Show
+newtype PolicyDocument = PolicyDocument Text deriving Show
+
+newtype Role' = Role' Text deriving Show
+
+newtype RoleName = RoleName Text deriving Show
 
 newtype Handler = Handler Text deriving Show
 
@@ -115,9 +146,14 @@ doGetAccountID = withAWS $ do
     result <- send getCallerIdentity
     return $ AccountID <$> result ^. gcirsAccount
 
+doCreateRole :: RoleName -> PolicyDocument -> IAMSession -> IO ARN
+doCreateRole (RoleName rn) (PolicyDocument pd) = withAWS $ do
+    result <- send $ createRole rn pd
+    return $ ARN (result ^. crrsRole . rARN)
+    
 -- Must have a role named "lambda_basic_execution" with AWSLambdaBasicExecutionRole policy attached
-lambdaBasicExecutionRole :: AccountID -> Role
-lambdaBasicExecutionRole (AccountID s) = Role $ Text.toStrict (format "arn:aws:iam::{}:role/lambda_basic_execution" $ Only s)
+lambdaBasicExecutionRole :: AccountID -> Role'
+lambdaBasicExecutionRole (AccountID s) = Role' $ Text.toStrict (format "arn:aws:iam::{}:role/lambda_basic_execution2" $ Only s)
 
 zipFunctionCode :: FilePath -> POSIXTime -> ByteString -> FunctionCode
 zipFunctionCode path timestamp sourceCode =
@@ -136,8 +172,8 @@ doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
     handling (_ResourceNotFoundException) (const (pure ())) $ do
         void $ send $ deleteFunction fn
 
-doCreateFunctionIfNotExists :: FunctionName -> Runtime -> Role -> Handler -> FunctionCode -> LambdaSession -> IO ()
-doCreateFunctionIfNotExists (FunctionName fn) rt (Role r) (Handler h) fc = withAWS $ do
+doCreateFunctionIfNotExists :: FunctionName -> Runtime -> Role' -> Handler -> FunctionCode -> LambdaSession -> IO ()
+doCreateFunctionIfNotExists (FunctionName fn) rt (Role' r) (Handler h) fc = withAWS $ do
     handling _ResourceConflictException (const (pure ())) $ do
         void $ send $ createFunction fn rt r h fc
 
@@ -149,11 +185,19 @@ doInvoke (FunctionName fn) payload = withAWS $ do
 main :: IO ()
 main = do
     homeDir <- getHomeDirectory
-    let conf = config (AWS Ohio)
+    let conf = config (AWSRegion Ohio)
                 & cCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
+                & cLogging .~ LoggingEnabled
+        roleName = RoleName "lambda_basic_execution"
+        policyDoc = PolicyDocument "AWSLambdaBasicExecutionRole"
+
+    iamSession <- connect conf iamService
+
+    putStrLn "CreateRole"
+    arn <- doCreateRole roleName policyDoc iamSession
+    print arn
 
     stsSession <- connect conf stsService
-    lambdaSession <- connect conf lambdaService
 
     -- Get AWS account ID
     -- TODO: Deliberately blow up if we don't have one!
@@ -162,6 +206,8 @@ main = do
     print role
 
     let fn = FunctionName "Add"
+
+    lambdaSession <- connect conf lambdaService
 
     putStrLn "DeleteFunction"
     doDeleteFunctionIfExists fn lambdaSession
