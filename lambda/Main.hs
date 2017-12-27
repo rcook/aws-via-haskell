@@ -23,6 +23,7 @@ import           Codec.Archive.Zip
                     , fromArchive
                     , toEntry
                     )
+import           Control.Concurrent (threadDelay)
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void)
@@ -31,6 +32,7 @@ import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as ByteString (toStrict)
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap (fromList)
+import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           Data.Text.Format (format)
@@ -46,12 +48,15 @@ import           Network.AWS
 import           Network.AWS.IAM
                     ( _EntityAlreadyExistsException
                     , _NoSuchEntityException
+                    , apPolicyARN
                     , attachRolePolicy
                     , createRole
                     , crrsRole
                     , deleteRole
                     , detachRolePolicy
                     , iam
+                    , larprsAttachedPolicies
+                    , listAttachedRolePolicies
                     , rARN
                     )
 import           Network.AWS.Lambda
@@ -127,7 +132,7 @@ lambdaService = LambdaService lambda
 
 newtype AccountID = AccountID Text deriving Show
 
-newtype ARN = ARN Text deriving Show
+newtype ARN = ARN Text deriving (Eq, Show)
 
 newtype FunctionName = FunctionName Text deriving Show
 
@@ -169,7 +174,23 @@ doCreateRoleIfNotExists (AccountID aid) (RoleName rn) (PolicyDocument pd) = with
         return $ ARN (result ^. crrsRole . rARN)
     where
         arn aid' rn' = ARN (Text.toStrict (format "arn:aws:iam::{}:role/{}" $ (aid', rn')))
-    
+
+doAttachRolePolicy :: RoleName -> ARN -> IAMSession -> IO ()
+doAttachRolePolicy (RoleName rn) (ARN arn) = withAWS $ do
+    void $ send $ attachRolePolicy rn arn
+
+doListAttachedRolePolicies :: RoleName -> IAMSession -> IO [ARN]
+doListAttachedRolePolicies (RoleName rn) = withAWS $ do
+    result <- send $ listAttachedRolePolicies rn
+    return $ catMaybes [ ARN <$> x ^. apPolicyARN | x <- result ^. larprsAttachedPolicies ]
+
+waitForRolePolicy :: RoleName -> ARN -> IAMSession -> IO ()
+waitForRolePolicy roleName policyArn iamSession = do
+    arns <- doListAttachedRolePolicies roleName iamSession
+    if policyArn `elem` arns then pure () else do
+        threadDelay 1000000
+        waitForRolePolicy roleName policyArn iamSession
+        
 zipFunctionCode :: FilePath -> POSIXTime -> ByteString -> FunctionCode
 zipFunctionCode path timestamp sourceCode =
     let entry = toEntry path (floor timestamp) sourceCode
@@ -191,10 +212,6 @@ doInvoke :: FunctionName -> Payload -> LambdaSession -> IO (Maybe Payload)
 doInvoke (FunctionName fn) payload = withAWS $ do
     result <- send $ invoke fn payload
     return $ result ^. irsPayload
-
-doAttachRolePolicy :: RoleName -> ARN -> IAMSession -> IO ()
-doAttachRolePolicy (RoleName rn) (ARN arn) = withAWS $ do
-    void $ send $ attachRolePolicy rn arn
 
 main :: IO ()
 main = do
@@ -231,13 +248,14 @@ main = do
     putStrLn "DeleteRoleIfExists"
     doDeleteRoleIfExists roleName iamSession
 
-    -- TODO: Is there some way to wait until this completes?
     putStrLn "CreateRole"
     arn <- doCreateRoleIfNotExists accountID roleName policyDoc iamSession
 
-    -- TODO: Is there some way to wait until this completes?
     putStrLn "AttachRolePolicy"
     doAttachRolePolicy roleName awsLambdaBasicExecutionRolePolicy iamSession
+
+    putStrLn "WaitForRolePolicy"
+    waitForRolePolicy roleName awsLambdaBasicExecutionRolePolicy iamSession
 
     timestamp <- getPOSIXTime
     let fc = zipFunctionCode "add_handler.py" timestamp "def add_handler(event, context):\n\
@@ -245,8 +263,6 @@ main = do
         \    y = int(event[\"y\"])\n\
         \    return { \"result\" : x + y }"
 
-    -- TODO: Fails intermittently since policies not always available
-    -- Use listRolePolicies or similar to poll until we can perform this operation
     putStrLn "CreateFunction"
     doCreateFunctionIfNotExists fn PYTHON2_7 arn (Handler "add_handler.add_handler") fc lambdaSession
 
