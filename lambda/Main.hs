@@ -8,11 +8,11 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSConnection
+                    ( Config(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
+                    , Session
                     , SessionClass(..)
                     , connect
                     , withAWS
@@ -77,7 +77,7 @@ instance ServiceClass STSService where
     rawService (STSService raw) = raw
     wrappedSession = STSSession
 
-data STSSession = STSSession AWSConnection
+data STSSession = STSSession Session
 
 instance SessionClass STSSession where
     rawSession (STSSession raw) = raw
@@ -89,7 +89,7 @@ instance ServiceClass LambdaService where
     rawService (LambdaService raw) = raw
     wrappedSession = LambdaSession
 
-data LambdaSession = LambdaSession AWSConnection
+data LambdaSession = LambdaSession Session
 
 instance SessionClass LambdaSession where
     rawSession (LambdaSession raw) = raw
@@ -149,10 +149,10 @@ doInvoke (FunctionName fn) payload = withAWS $ do
 main :: IO ()
 main = do
     homeDir <- getHomeDirectory
-    let serviceEndpoint = AWS Ohio
-        loggingState = LoggingDisabled
-        credentials = FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials"
-        config = AWSConfig serviceEndpoint loggingState credentials
+    let config = Config
+                    (AWS Ohio)
+                    LoggingDisabled
+                    (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
 
     stsSession <- connect config stsService
     lambdaSession <- connect config lambdaService

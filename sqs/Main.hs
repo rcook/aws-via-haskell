@@ -8,12 +8,12 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSConnection
+                    ( Config(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
+                    , Session
                     , connect
                     , withAWS
                     )
@@ -49,7 +49,7 @@ instance ServiceClass SQSService where
     rawService (SQSService raw) = raw
     wrappedSession = SQSSession
 
-data SQSSession = SQSSession AWSConnection
+data SQSSession = SQSSession Session
 
 instance SessionClass SQSSession where
     rawSession (SQSSession raw) = raw
@@ -90,7 +90,9 @@ main :: IO ()
 main = do
     let queueName = QueueName "my-queue"
 
-    sqsSession <- connect (AWSConfig (Local "localhost" 4576) LoggingDisabled Discover) sqsService
+    sqsSession <- connect
+                    (Config (Local "localhost" 4576) LoggingDisabled Discover)
+                    sqsService
 
     putStrLn "CreateQueue"
     doCreateQueue queueName sqsSession

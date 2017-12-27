@@ -11,12 +11,12 @@ module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSConnection
+                    ( Config(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
+                    , Session
                     , connect
                     , intToText
                     , parseInt
@@ -70,7 +70,7 @@ instance ServiceClass DDBService where
     rawService (DDBService raw) = raw
     wrappedSession = DDBSession
 
-data DDBSession = DDBSession AWSConnection
+data DDBSession = DDBSession Session
 
 instance SessionClass DDBSession where
     rawSession (DDBSession raw) = raw
@@ -142,7 +142,9 @@ main :: IO ()
 main = do
     let tableName = TableName "table"
 
-    ddbSession <- connect (AWSConfig (Local "localhost" 8000) LoggingDisabled Discover) ddbService
+    ddbSession <- connect
+                    (Config (Local "localhost" 8000) LoggingDisabled Discover)
+                    ddbService
 
     putStrLn "DeleteTableIfExists"
     doDeleteTableIfExists tableName ddbSession

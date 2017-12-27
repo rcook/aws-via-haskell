@@ -9,12 +9,12 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSConnection(..)
+                    ( Config(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
+                    , Session(..)
                     , connect
                     , withAWS
                     )
@@ -65,7 +65,7 @@ instance ServiceClass S3Service where
     rawService (S3Service raw) = raw
     wrappedSession = S3Session
 
-data S3Session = S3Session AWSConnection
+data S3Session = S3Session Session
 
 instance SessionClass S3Session where
     rawSession (S3Session raw) = raw
@@ -106,8 +106,10 @@ main :: IO ()
 main = do
     let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
-    s3Session <- connect (AWSConfig (AWS Ohio) LoggingDisabled Discover) s3Service
-    --s3Session <- connect (AWSConfig (Local "localhost" 4572) LoggingDisabled Discover) s3Service
+    s3Session <- connect
+                    (Config (AWS Ohio) LoggingDisabled Discover)
+                    --(Config (Local "localhost" 4572) LoggingDisabled Discover)
+                    s3Service
 
     putStrLn "CreateBucket"
     doCreateBucketIfNotExists bucketName s3Session

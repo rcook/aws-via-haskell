@@ -10,12 +10,12 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module AWSViaHaskell.AWSInfo
-    ( AWSConfig(..)
-    , AWSConnection(..)
+module AWSViaHaskell.AWS
+    ( Config(..)
     , LoggingState(..)
     , ServiceClass(..)
     , ServiceEndpoint(..)
+    , Session(..)
     , SessionClass(..)
     , connect
     , withAWS
@@ -51,7 +51,7 @@ type HostName = ByteString
 
 type Port = Int
 
-data AWSConnection = AWSConnection
+data Session = Session
     { acxEnv :: Env
     , acxRegion :: Region
     , acxService :: Service
@@ -64,29 +64,29 @@ data ServiceEndpoint = AWS Region | Local HostName Port
 class ServiceClass a where
     type TypedSession a :: *
     rawService :: a -> Service
-    wrappedSession :: AWSConnection -> TypedSession a
+    wrappedSession :: Session -> TypedSession a
 
 class SessionClass a where
-    rawSession :: a -> AWSConnection
+    rawSession :: a -> Session
 
-data AWSConfig = AWSConfig
+data Config = Config
     { acServiceEndpoint :: ServiceEndpoint
     , acLoggingState :: LoggingState
     , acCredentials :: Credentials
     }
 
-connect :: forall a . ServiceClass a => AWSConfig -> a -> IO (TypedSession a)
-connect AWSConfig{..} service = do
+connect :: forall a . ServiceClass a => Config -> a -> IO (TypedSession a)
+connect Config{..} service = do
     let serviceRaw = rawService service
-    session' <- getAWSConnection acServiceEndpoint serviceRaw acLoggingState acCredentials
+    session' <- getSession acServiceEndpoint serviceRaw acLoggingState acCredentials
     let session = wrappedSession @a session'
     return session
 
-getAWSConnection :: ServiceEndpoint -> Service -> LoggingState -> Credentials -> IO AWSConnection
-getAWSConnection acServiceEndpoint acService acLoggingState acCredentials = do
+getSession :: ServiceEndpoint -> Service -> LoggingState -> Credentials -> IO Session
+getSession acServiceEndpoint acService acLoggingState acCredentials = do
     e <- mkEnv acLoggingState acCredentials
     let (r, s) = regionService acServiceEndpoint acService
-    return $ AWSConnection e r s
+    return $ Session e r s
     where
         -- Standard discovery mechanism for credentials, log to standard output
         mkEnv LoggingEnabled c = do
@@ -105,7 +105,7 @@ withAWS :: (MonadBaseControl IO m, SessionClass b) =>
     -> b
     -> m a
 withAWS action session =
-    let AWSConnection{..} = rawSession session
+    let Session{..} = rawSession session
     in
         runResourceT . runAWST acxEnv . within acxRegion $ do
             reconfigure acxService action

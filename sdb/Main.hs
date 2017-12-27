@@ -8,12 +8,12 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( AWSConfig(..)
-                    , AWSConnection
+                    ( Config(..)
                     , LoggingState(..)
                     , ServiceClass(..)
                     , ServiceEndpoint(..)
                     , SessionClass(..)
+                    , Session
                     , connect
                     , withAWS
                     )
@@ -48,7 +48,7 @@ instance ServiceClass SDBService where
     rawService (SDBService raw) = raw
     wrappedSession = SDBSession
 
-data SDBSession = SDBSession AWSConnection
+data SDBSession = SDBSession Session
 
 instance SessionClass SDBSession where
     rawSession (SDBSession raw) = raw
@@ -85,7 +85,9 @@ main = do
         itemName = ItemName "my-item"
 
     -- Default port for simpledb-dev2
-    sdbSession <- connect (AWSConfig (Local "localhost" 8080) LoggingDisabled Discover) sdbService
+    sdbSession <- connect
+                    (Config (Local "localhost" 8080) LoggingDisabled Discover)
+                    sdbService
 
     putStrLn "CreateDomain"
     doCreateDomainIfNotExists domainName sdbSession
