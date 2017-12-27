@@ -45,12 +45,12 @@ import           Network.AWS
                     )
 import           Network.AWS.IAM
                     ( _EntityAlreadyExistsException
+                    , attachRolePolicy
                     , createRole
                     , crrsRole
                     , iam
                     , rARN
                     )
-import Network.AWS.IAM
 import           Network.AWS.Lambda
                     ( _ResourceConflictException
                     , _ResourceNotFoundException
