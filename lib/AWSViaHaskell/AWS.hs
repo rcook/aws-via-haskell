@@ -7,21 +7,29 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module AWSViaHaskell.AWS
-    ( Config(..)
-    , LoggingState(..)
+    ( Config
+    , Endpoint(..)
+    , Logging(..)
     , ServiceClass(..)
-    , ServiceEndpoint(..)
-    , Session(..)
+    , Session
     , SessionClass(..)
+    , cCredentials
+    , cEndpoint
+    , cLogging
+    , config
     , connect
+    , sEnv
+    , sRegion
+    , sService
     , withAWS
     ) where
 
-import           Control.Lens ((<&>), set)
+import           Control.Lens ((<&>), makeLenses, set)
 import           Control.Monad.Trans.AWS
                     ( AWST'
                     , reconfigure
@@ -52,14 +60,22 @@ type HostName = ByteString
 type Port = Int
 
 data Session = Session
-    { acxEnv :: Env
-    , acxRegion :: Region
-    , acxService :: Service
+    { _sEnv :: Env
+    , _sRegion :: Region
+    , _sService :: Service
     }
+makeLenses ''Session
 
-data LoggingState = LoggingEnabled | LoggingDisabled
+data Logging = LoggingEnabled | LoggingDisabled
 
-data ServiceEndpoint = AWS Region | Local HostName Port
+data Endpoint = AWS Region | Local HostName Port
+
+data Config = Config
+    { _cEndpoint :: Endpoint
+    , _cLogging :: Logging
+    , _cCredentials :: Credentials
+    }
+makeLenses ''Config
 
 class ServiceClass a where
     type TypedSession a :: *
@@ -69,36 +85,31 @@ class ServiceClass a where
 class SessionClass a where
     rawSession :: a -> Session
 
-data Config = Config
-    { acServiceEndpoint :: ServiceEndpoint
-    , acLoggingState :: LoggingState
-    , acCredentials :: Credentials
-    }
+config :: Endpoint -> Config
+config endpoint = Config endpoint LoggingDisabled Discover
 
 connect :: forall a . ServiceClass a => Config -> a -> IO (TypedSession a)
 connect Config{..} service = do
     let serviceRaw = rawService service
-    session' <- getSession acServiceEndpoint serviceRaw acLoggingState acCredentials
+    e <- mkEnv _cLogging _cCredentials
+    let (r, s) = regionService _cEndpoint serviceRaw
+    session' <- return $ Session e r s
     let session = wrappedSession @a session'
     return session
 
-getSession :: ServiceEndpoint -> Service -> LoggingState -> Credentials -> IO Session
-getSession acServiceEndpoint acService acLoggingState acCredentials = do
-    e <- mkEnv acLoggingState acCredentials
-    let (r, s) = regionService acServiceEndpoint acService
-    return $ Session e r s
-    where
-        -- Standard discovery mechanism for credentials, log to standard output
-        mkEnv LoggingEnabled c = do
-            logger <- newLogger Debug stdout
-            newEnv c <&> set envLogger logger
-        -- Standard discovery mechanism for credentials, no logging
-        mkEnv LoggingDisabled c = newEnv c
+mkEnv :: Logging -> Credentials -> IO Env
+-- Standard discovery mechanism for credentials, log to standard output
+mkEnv LoggingEnabled c = do
+    logger <- newLogger Debug stdout
+    newEnv c <&> set envLogger logger
+-- Standard discovery mechanism for credentials, no logging
+mkEnv LoggingDisabled c = newEnv c
 
-        -- Run against a DynamoDB instance running on AWS in specified region
-        regionService (AWS region) s = (region, s)
-        -- Run against a local DynamoDB instance on a given host and port
-        regionService (Local hostName port) s = (NorthVirginia, setEndpoint False hostName port s)
+regionService :: Endpoint -> Service -> (Region, Service)
+-- Run against a DynamoDB instance running on AWS in specified region
+regionService (AWS region) s = (region, s)
+-- Run against a local DynamoDB instance on a given host and port
+regionService (Local hostName port) s = (NorthVirginia, setEndpoint False hostName port s)
 
 withAWS :: (MonadBaseControl IO m, SessionClass b) =>
     AWST' Env (ResourceT m) a
@@ -107,5 +118,5 @@ withAWS :: (MonadBaseControl IO m, SessionClass b) =>
 withAWS action session =
     let Session{..} = rawSession session
     in
-        runResourceT . runAWST acxEnv . within acxRegion $ do
-            reconfigure acxService action
+        runResourceT . runAWST _sEnv . within _sRegion $ do
+            reconfigure _sService action

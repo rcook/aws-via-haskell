@@ -11,12 +11,11 @@ module Main (main) where
 
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
-                    ( Config(..)
-                    , LoggingState(..)
+                    ( Endpoint(..)
                     , ServiceClass(..)
-                    , ServiceEndpoint(..)
                     , SessionClass(..)
                     , Session
+                    , config
                     , connect
                     , intToText
                     , parseInt
@@ -29,8 +28,7 @@ import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import           Network.AWS
-                    ( Credentials(..)
-                    , Service
+                    ( Service
                     , await
                     , send
                     )
@@ -143,7 +141,7 @@ main = do
     let tableName = TableName "table"
 
     ddbSession <- connect
-                    (Config (Local "localhost" 8000) LoggingDisabled Discover)
+                    (config (Local "localhost" 8000))
                     ddbService
 
     putStrLn "DeleteTableIfExists"

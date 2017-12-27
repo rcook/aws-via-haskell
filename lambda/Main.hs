@@ -8,12 +8,12 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Config(..)
-                    , LoggingState(..)
+                    ( Endpoint(..)
                     , ServiceClass(..)
-                    , ServiceEndpoint(..)
                     , Session
                     , SessionClass(..)
+                    , cCredentials
+                    , config
                     , connect
                     , withAWS
                     )
@@ -149,13 +149,11 @@ doInvoke (FunctionName fn) payload = withAWS $ do
 main :: IO ()
 main = do
     homeDir <- getHomeDirectory
-    let config = Config
-                    (AWS Ohio)
-                    LoggingDisabled
-                    (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
+    let conf = config (AWS Ohio)
+                & cCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
 
-    stsSession <- connect config stsService
-    lambdaSession <- connect config lambdaService
+    stsSession <- connect conf stsService
+    lambdaSession <- connect conf lambdaService
 
     -- Get AWS account ID
     -- TODO: Deliberately blow up if we don't have one!

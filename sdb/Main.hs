@@ -8,12 +8,11 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Config(..)
-                    , LoggingState(..)
+                    ( Endpoint(..)
                     , ServiceClass(..)
-                    , ServiceEndpoint(..)
                     , SessionClass(..)
                     , Session
+                    , config
                     , connect
                     , withAWS
                     )
@@ -23,8 +22,7 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text
 import           Network.AWS
-                    ( Credentials(..)
-                    , Service
+                    ( Service
                     , send
                     )
 import           Network.AWS.SDB
@@ -86,7 +84,7 @@ main = do
 
     -- Default port for simpledb-dev2
     sdbSession <- connect
-                    (Config (Local "localhost" 8080) LoggingDisabled Discover)
+                    (config (Local "localhost" 8080))
                     sdbService
 
     putStrLn "CreateDomain"

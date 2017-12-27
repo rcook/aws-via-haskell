@@ -9,13 +9,13 @@
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Config(..)
-                    , LoggingState(..)
+                    ( Endpoint(..)
                     , ServiceClass(..)
-                    , ServiceEndpoint(..)
                     , SessionClass(..)
-                    , Session(..)
+                    , Session
+                    , config
                     , connect
+                    , sRegion
                     , withAWS
                     )
 import           Control.Exception.Lens (handling)
@@ -27,8 +27,7 @@ import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
-                    ( Credentials(..)
-                    , Region(..)
+                    ( Region(..)
                     , Service
                     , await
                     , send
@@ -76,7 +75,7 @@ s3Service = S3Service s3
 doCreateBucketIfNotExists :: BucketName -> S3Session -> IO ()
 doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withAWS) s3Session $ do
     let cbc = createBucketConfiguration
-                & cbcLocationConstraint .~ Just (LocationConstraint (acxRegion session))
+                & cbcLocationConstraint .~ Just (LocationConstraint (session ^. sRegion))
     newlyCreated <- handling _BucketAlreadyOwnedByYou (const (pure False)) $ do
         void $ send $ createBucket bucketName
                         & cbCreateBucketConfiguration .~ Just cbc
@@ -107,7 +106,7 @@ main = do
     let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
     s3Session <- connect
-                    (Config (AWS Ohio) LoggingDisabled Discover)
+                    (config (AWS Ohio))
                     --(Config (Local "localhost" 4572) LoggingDisabled Discover)
                     s3Service
 
