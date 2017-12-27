@@ -45,9 +45,12 @@ import           Network.AWS
                     )
 import           Network.AWS.IAM
                     ( _EntityAlreadyExistsException
+                    , _NoSuchEntityException
                     , attachRolePolicy
                     , createRole
                     , crrsRole
+                    , deleteRole
+                    , detachRolePolicy
                     , iam
                     , rARN
                     )
@@ -136,10 +139,28 @@ newtype Handler = Handler Text deriving Show
 
 type Payload = HashMap Text Value
 
+awsLambdaBasicExecutionRolePolicy :: ARN
+awsLambdaBasicExecutionRolePolicy = ARN "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
 doGetAccountID :: STSSession -> IO (Maybe AccountID)
 doGetAccountID = withAWS $ do
     result <- send getCallerIdentity
     return $ AccountID <$> result ^. gcirsAccount
+
+doDeleteFunctionIfExists :: FunctionName -> LambdaSession -> IO ()
+doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
+    handling (_ResourceNotFoundException) (const (pure ())) $ do
+        void $ send $ deleteFunction fn
+
+doDetachRolePolicyIfExists :: RoleName -> ARN -> IAMSession -> IO ()
+doDetachRolePolicyIfExists (RoleName rn) (ARN arn) = withAWS $ do
+    handling _NoSuchEntityException (const $ pure ()) $ do
+        void $ send $ detachRolePolicy rn arn
+
+doDeleteRoleIfExists :: RoleName -> IAMSession -> IO ()
+doDeleteRoleIfExists (RoleName rn) = withAWS $ do
+    handling _NoSuchEntityException (const $ pure ()) $ do
+        void $ send $ deleteRole rn
 
 doCreateRoleIfNotExists :: AccountID -> RoleName -> PolicyDocument -> IAMSession -> IO ARN
 doCreateRoleIfNotExists (AccountID aid) (RoleName rn) (PolicyDocument pd) = withAWS $ do
@@ -161,11 +182,6 @@ doListFunctions = withAWS $ do
     result <- send $ listFunctions
     return [ FunctionName <$> f ^. fcFunctionName | f <- result ^. lfrsFunctions ]
 
-doDeleteFunctionIfExists :: FunctionName -> LambdaSession -> IO ()
-doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
-    handling (_ResourceNotFoundException) (const (pure ())) $ do
-        void $ send $ deleteFunction fn
-
 doCreateFunctionIfNotExists :: FunctionName -> Runtime -> ARN -> Handler -> FunctionCode -> LambdaSession -> IO ()
 doCreateFunctionIfNotExists (FunctionName fn) rt (ARN arn) (Handler h) fc = withAWS $ do
     handling _ResourceConflictException (const (pure ())) $ do
@@ -176,9 +192,9 @@ doInvoke (FunctionName fn) payload = withAWS $ do
     result <- send $ invoke fn payload
     return $ result ^. irsPayload
 
-doAttachRolePolicy :: IAMSession -> IO ()
-doAttachRolePolicy = withAWS $ do
-    void $ send $ attachRolePolicy "lambda_basic_execution" "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+doAttachRolePolicy :: RoleName -> ARN -> IAMSession -> IO ()
+doAttachRolePolicy (RoleName rn) (ARN arn) = withAWS $ do
+    void $ send $ attachRolePolicy rn arn
 
 main :: IO ()
 main = do
@@ -201,7 +217,19 @@ main = do
                         \    }]\n\
                         \}"
 
+    lambdaSession <- connect conf lambdaService
+    let fn = FunctionName "Add"
+
+    putStrLn "DeleteFunctionIfExists"
+    doDeleteFunctionIfExists fn lambdaSession
+
     iamSession <- connect conf iamService
+
+    putStrLn "DetachRolePolicyIfExists"
+    doDetachRolePolicyIfExists roleName awsLambdaBasicExecutionRolePolicy iamSession
+
+    putStrLn "DeleteRoleIfExists"
+    doDeleteRoleIfExists roleName iamSession
 
     -- TODO: Is there some way to wait until this completes?
     putStrLn "CreateRole"
@@ -209,13 +237,7 @@ main = do
 
     -- TODO: Is there some way to wait until this completes?
     putStrLn "AttachRolePolicy"
-    doAttachRolePolicy iamSession
-
-    lambdaSession <- connect conf lambdaService
-    let fn = FunctionName "Add"
-
-    putStrLn "DeleteFunction"
-    doDeleteFunctionIfExists fn lambdaSession
+    doAttachRolePolicy roleName awsLambdaBasicExecutionRolePolicy iamSession
 
     timestamp <- getPOSIXTime
     let fc = zipFunctionCode "add_handler.py" timestamp "def add_handler(event, context):\n\
