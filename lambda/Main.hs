@@ -53,6 +53,7 @@ import           Network.AWS.IAM
                     , iam
                     , rARN
                     )
+import Network.AWS.IAM
 import           Network.AWS.Lambda
                     ( _ResourceConflictException
                     , _ResourceNotFoundException
@@ -75,6 +76,7 @@ import           Network.AWS.STS
                     , sts
                     )
 import           System.Directory (getHomeDirectory)
+import           System.Exit (exitSuccess)
 import           System.FilePath ((</>))
 
 -- TODO: Figure out how to reduce the class instance boilerplate!
@@ -178,6 +180,10 @@ doInvoke (FunctionName fn) payload = withAWS $ do
     result <- send $ invoke fn payload
     return $ result ^. irsPayload
 
+doAttachRolePolicy :: IAMSession -> IO ()
+doAttachRolePolicy = withAWS $ do
+    void $ send $ attachRolePolicy "lambda_basic_execution" "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+
 main :: IO ()
 main = do
     homeDir <- getHomeDirectory
@@ -195,15 +201,18 @@ main = do
                         \    \"Version\": \"2012-10-17\",\n\
                         \    \"Statement\": [{\n\
                         \         \"Effect\": \"Allow\",\n\
-                        \         \"Principal\": { \"AWS\" : \"{}\" },\n\
+                        \         \"Principal\": { \"Service\" : \"{}\" },\n\
                         \         \"Action\": \"sts:AssumeRole\"\n\
                         \    }]\n\
-                        \}" $ Only (unAccountID accountID))
+                        \}" $ Only ("lambda.amazonaws.com" :: Text))
 
     iamSession <- connect conf iamService
 
     putStrLn "CreateRole"
     arn <- doCreateRoleIfNotExists accountID roleName policyDoc iamSession
+
+    putStrLn "AttachRolePolicy"
+    doAttachRolePolicy iamSession
 
     lambdaSession <- connect conf lambdaService
     let fn = FunctionName "Add"
