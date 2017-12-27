@@ -33,10 +33,7 @@ import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap (fromList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import           Data.Text.Format
-                    ( Only(..)
-                    , format
-                    )
+import           Data.Text.Format (format)
 import qualified Data.Text.Lazy as Text (toStrict)
 import qualified Data.Text.IO as Text (putStrLn)
 import           Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
@@ -126,7 +123,7 @@ stsService = STSService sts
 lambdaService :: LambdaService
 lambdaService = LambdaService lambda
 
-newtype AccountID = AccountID { unAccountID :: Text } deriving Show
+newtype AccountID = AccountID Text deriving Show
 
 newtype ARN = ARN Text deriving Show
 
@@ -196,15 +193,14 @@ main = do
                         Nothing -> error "No AWS account ID!"
                         Just x -> x
         roleName = RoleName "lambda_basic_execution"
-        -- TODO: Still doesn't grant the right permissions!
-        policyDoc = PolicyDocument $ Text.toStrict (format "{\n\
+        policyDoc = PolicyDocument "{\n\
                         \    \"Version\": \"2012-10-17\",\n\
                         \    \"Statement\": [{\n\
                         \         \"Effect\": \"Allow\",\n\
-                        \         \"Principal\": { \"Service\" : \"{}\" },\n\
+                        \         \"Principal\": { \"Service\" : \"lambda.amazonaws.com\" },\n\
                         \         \"Action\": \"sts:AssumeRole\"\n\
                         \    }]\n\
-                        \}" $ Only ("lambda.amazonaws.com" :: Text))
+                        \}"
 
     iamSession <- connect conf iamService
 
