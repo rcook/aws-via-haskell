@@ -245,6 +245,8 @@ main = do
         \    y = int(event[\"y\"])\n\
         \    return { \"result\" : x + y }"
 
+    -- TODO: Fails intermittently since policies not always available
+    -- Use listRolePolicies or similar to poll until we can perform this operation
     putStrLn "CreateFunction"
     doCreateFunctionIfNotExists fn PYTHON2_7 arn (Handler "add_handler.add_handler") fc lambdaSession
 
