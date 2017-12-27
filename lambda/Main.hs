@@ -9,12 +9,10 @@ module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , Logging(..)
                     , ServiceClass(..)
                     , Session
                     , SessionClass(..)
                     , cCredentials
-                    , cLogging
                     , config
                     , connect
                     , withAWS
@@ -49,7 +47,8 @@ import           Network.AWS
                     , send
                     )
 import           Network.AWS.IAM
-                    ( createRole
+                    ( _EntityAlreadyExistsException
+                    , createRole
                     , crrsRole
                     , iam
                     , rARN
@@ -125,15 +124,13 @@ stsService = STSService sts
 lambdaService :: LambdaService
 lambdaService = LambdaService lambda
 
-newtype AccountID = AccountID Text deriving Show
+newtype AccountID = AccountID { unAccountID :: Text } deriving Show
 
 newtype ARN = ARN Text deriving Show
 
 newtype FunctionName = FunctionName Text deriving Show
 
 newtype PolicyDocument = PolicyDocument Text deriving Show
-
-newtype Role' = Role' Text deriving Show
 
 newtype RoleName = RoleName Text deriving Show
 
@@ -146,15 +143,14 @@ doGetAccountID = withAWS $ do
     result <- send getCallerIdentity
     return $ AccountID <$> result ^. gcirsAccount
 
-doCreateRole :: RoleName -> PolicyDocument -> IAMSession -> IO ARN
-doCreateRole (RoleName rn) (PolicyDocument pd) = withAWS $ do
-    result <- send $ createRole rn pd
-    return $ ARN (result ^. crrsRole . rARN)
+doCreateRoleIfNotExists :: AccountID -> RoleName -> PolicyDocument -> IAMSession -> IO ARN
+doCreateRoleIfNotExists (AccountID aid) (RoleName rn) (PolicyDocument pd) = withAWS $ do
+    handling _EntityAlreadyExistsException (const $ pure (arn aid rn)) $ do
+        result <- send $ createRole rn pd
+        return $ ARN (result ^. crrsRole . rARN)
+    where
+        arn aid' rn' = ARN (Text.toStrict (format "arn:aws:iam::{}:role/{}" $ (aid', rn')))
     
--- Must have a role named "lambda_basic_execution" with AWSLambdaBasicExecutionRole policy attached
-lambdaBasicExecutionRole :: AccountID -> Role'
-lambdaBasicExecutionRole (AccountID s) = Role' $ Text.toStrict (format "arn:aws:iam::{}:role/lambda_basic_execution2" $ Only s)
-
 zipFunctionCode :: FilePath -> POSIXTime -> ByteString -> FunctionCode
 zipFunctionCode path timestamp sourceCode =
     let entry = toEntry path (floor timestamp) sourceCode
@@ -172,10 +168,10 @@ doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
     handling (_ResourceNotFoundException) (const (pure ())) $ do
         void $ send $ deleteFunction fn
 
-doCreateFunctionIfNotExists :: FunctionName -> Runtime -> Role' -> Handler -> FunctionCode -> LambdaSession -> IO ()
-doCreateFunctionIfNotExists (FunctionName fn) rt (Role' r) (Handler h) fc = withAWS $ do
+doCreateFunctionIfNotExists :: FunctionName -> Runtime -> ARN -> Handler -> FunctionCode -> LambdaSession -> IO ()
+doCreateFunctionIfNotExists (FunctionName fn) rt (ARN arn) (Handler h) fc = withAWS $ do
     handling _ResourceConflictException (const (pure ())) $ do
-        void $ send $ createFunction fn rt r h fc
+        void $ send $ createFunction fn rt arn h fc
 
 doInvoke :: FunctionName -> Payload -> LambdaSession -> IO (Maybe Payload)
 doInvoke (FunctionName fn) payload = withAWS $ do
@@ -187,27 +183,30 @@ main = do
     homeDir <- getHomeDirectory
     let conf = config (AWSRegion Ohio)
                 & cCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
-                & cLogging .~ LoggingEnabled
+
+    stsSession <- connect conf stsService
+    mbAccountID <- doGetAccountID stsSession
+    let accountID = case mbAccountID of
+                        Nothing -> error "No AWS account ID!"
+                        Just x -> x
         roleName = RoleName "lambda_basic_execution"
-        policyDoc = PolicyDocument "AWSLambdaBasicExecutionRole"
+        -- TODO: Still doesn't grant the right permissions!
+        policyDoc = PolicyDocument $ Text.toStrict (format "{\n\
+                        \    \"Version\": \"2012-10-17\",\n\
+                        \    \"Statement\": [{\n\
+                        \         \"Effect\": \"Allow\",\n\
+                        \         \"Principal\": { \"AWS\" : \"{}\" },\n\
+                        \         \"Action\": \"sts:AssumeRole\"\n\
+                        \    }]\n\
+                        \}" $ Only (unAccountID accountID))
 
     iamSession <- connect conf iamService
 
     putStrLn "CreateRole"
-    arn <- doCreateRole roleName policyDoc iamSession
-    print arn
-
-    stsSession <- connect conf stsService
-
-    -- Get AWS account ID
-    -- TODO: Deliberately blow up if we don't have one!
-    Just accountID <- doGetAccountID stsSession
-    let role = lambdaBasicExecutionRole accountID
-    print role
-
-    let fn = FunctionName "Add"
+    arn <- doCreateRoleIfNotExists accountID roleName policyDoc iamSession
 
     lambdaSession <- connect conf lambdaService
+    let fn = FunctionName "Add"
 
     putStrLn "DeleteFunction"
     doDeleteFunctionIfExists fn lambdaSession
@@ -219,7 +218,7 @@ main = do
         \    return { \"result\" : x + y }"
 
     putStrLn "CreateFunction"
-    doCreateFunctionIfNotExists fn PYTHON2_7 role (Handler "add_handler.add_handler") fc lambdaSession
+    doCreateFunctionIfNotExists fn PYTHON2_7 arn (Handler "add_handler.add_handler") fc lambdaSession
 
     putStrLn "ListFunctions"
     names <- doListFunctions lambdaSession
