@@ -15,7 +15,7 @@ import           AWSViaHaskell
                     , ServiceClass(..)
                     , SessionClass(..)
                     , Session
-                    , config
+                    , awsConfig
                     , connect
                     , intToText
                     , parseInt
@@ -141,7 +141,7 @@ main = do
     let tableName = TableName "table"
 
     ddbSession <- connect
-                    (config (Local "localhost" 8000))
+                    (awsConfig (Local "localhost" 8000))
                     ddbService
 
     putStrLn "DeleteTableIfExists"

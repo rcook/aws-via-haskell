@@ -13,7 +13,7 @@ import           AWSViaHaskell
                     , ServiceClass(..)
                     , SessionClass(..)
                     , Session
-                    , config
+                    , awsConfig
                     , connect
                     , sRegion
                     , withAWS
@@ -106,8 +106,8 @@ main = do
     let bucketName = "rcook456dac3a5a0e4aeba1b3238306916a31"
 
     s3Session <- connect
-                    (config (AWSRegion Ohio))
-                    --(Config (Local "localhost" 4572) LoggingDisabled Discover)
+                    (awsConfig (AWSRegion Ohio))
+                    --(awsConfig (Local "localhost" 4572) LoggingDisabled Discover)
                     s3Service
 
     putStrLn "CreateBucket"

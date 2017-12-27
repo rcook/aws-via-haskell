@@ -12,7 +12,7 @@ import           AWSViaHaskell
                     , ServiceClass(..)
                     , SessionClass(..)
                     , Session
-                    , config
+                    , awsConfig
                     , connect
                     , withAWS
                     )
@@ -84,7 +84,7 @@ main = do
 
     -- Default port for simpledb-dev2
     sdbSession <- connect
-                    (config (Local "localhost" 8080))
+                    (awsConfig (Local "localhost" 8080))
                     sdbService
 
     putStrLn "CreateDomain"

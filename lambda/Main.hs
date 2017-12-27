@@ -12,8 +12,8 @@ import           AWSViaHaskell
                     , ServiceClass(..)
                     , Session
                     , SessionClass(..)
-                    , cCredentials
-                    , config
+                    , awscCredentials
+                    , awsConfig
                     , connect
                     , withAWS
                     )
@@ -216,8 +216,8 @@ doInvoke (FunctionName fn) payload = withAWS $ do
 main :: IO ()
 main = do
     homeDir <- getHomeDirectory
-    let conf = config (AWSRegion Ohio)
-                & cCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
+    let conf = awsConfig (AWSRegion Ohio)
+                & awscCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
 
     stsSession <- connect conf stsService
     mbAccountID <- doGetAccountID stsSession

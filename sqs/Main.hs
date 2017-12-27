@@ -12,7 +12,7 @@ import           AWSViaHaskell
                     , ServiceClass(..)
                     , SessionClass(..)
                     , Session
-                    , config
+                    , awsConfig
                     , connect
                     , withAWS
                     )
@@ -89,7 +89,7 @@ main = do
     let queueName = QueueName "my-queue"
 
     sqsSession <- connect
-                    (config (Local "localhost" 4576))
+                    (awsConfig (Local "localhost" 4576))
                     sqsService
 
     putStrLn "CreateQueue"

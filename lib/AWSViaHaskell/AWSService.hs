@@ -12,16 +12,16 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module AWSViaHaskell.AWSService
-    ( Config
+    ( AWSConfig
     , Endpoint(..)
     , Logging(..)
     , ServiceClass(..)
     , Session
     , SessionClass(..)
-    , cCredentials
-    , cEndpoint
-    , cLogging
-    , config
+    , awscCredentials
+    , awscEndpoint
+    , awscLogging
+    , awsConfig
     , connect
     , sEnv
     , sRegion
@@ -70,12 +70,12 @@ data Logging = LoggingEnabled | LoggingDisabled
 
 data Endpoint = AWSRegion Region | Local HostName Port
 
-data Config = Config
-    { _cEndpoint :: Endpoint
-    , _cLogging :: Logging
-    , _cCredentials :: Credentials
+data AWSConfig = AWSConfig
+    { _awscEndpoint :: Endpoint
+    , _awscLogging :: Logging
+    , _awscCredentials :: Credentials
     }
-makeLenses ''Config
+makeLenses ''AWSConfig
 
 class ServiceClass a where
     type TypedSession a :: *
@@ -85,14 +85,14 @@ class ServiceClass a where
 class SessionClass a where
     rawSession :: a -> Session
 
-config :: Endpoint -> Config
-config endpoint = Config endpoint LoggingDisabled Discover
+awsConfig :: Endpoint -> AWSConfig
+awsConfig endpoint = AWSConfig endpoint LoggingDisabled Discover
 
-connect :: forall a . ServiceClass a => Config -> a -> IO (TypedSession a)
-connect Config{..} service = do
+connect :: forall a . ServiceClass a => AWSConfig -> a -> IO (TypedSession a)
+connect (AWSConfig endpoint logging credentials) service = do
     let serviceRaw = rawService service
-    e <- mkEnv _cLogging _cCredentials
-    let (r, s) = regionService _cEndpoint serviceRaw
+    e <- mkEnv logging credentials
+    let (r, s) = regionService endpoint serviceRaw
     session' <- return $ Session e r s
     let session = wrappedSession @a session'
     return session
