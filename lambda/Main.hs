@@ -73,7 +73,6 @@ import           Network.AWS.STS
                     , sts
                     )
 import           System.Directory (getHomeDirectory)
-import           System.Exit (exitSuccess)
 import           System.FilePath ((</>))
 
 -- TODO: Figure out how to reduce the class instance boilerplate!
@@ -204,9 +203,11 @@ main = do
 
     iamSession <- connect conf iamService
 
+    -- TODO: Is there some way to wait until this completes?
     putStrLn "CreateRole"
     arn <- doCreateRoleIfNotExists accountID roleName policyDoc iamSession
 
+    -- TODO: Is there some way to wait until this completes?
     putStrLn "AttachRolePolicy"
     doAttachRolePolicy iamSession
 
