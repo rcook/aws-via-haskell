@@ -3,28 +3,24 @@
 --------------------------------------------------
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceClass(..)
-                    , SessionClass(..)
-                    , Session
                     , awsConfig
                     , connect
                     , withAWS
+                    , wrapAWSService
                     )
 import           Control.Lens ((&), (^.), (.~))
 import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text
-import           Network.AWS
-                    ( Service
-                    , send
-                    )
+import           Network.AWS (send)
 import           Network.AWS.SDB
                     ( aName
                     , aValue
@@ -39,20 +35,7 @@ import           Network.AWS.SDB
                     , sdb
                     )
 
-data SDBService = SDBService Service
-
-instance ServiceClass SDBService where
-    type TypedSession SDBService = SDBSession
-    rawService (SDBService raw) = raw
-    wrappedSession = SDBSession
-
-data SDBSession = SDBSession Session
-
-instance SessionClass SDBSession where
-    rawSession (SDBSession raw) = raw
-
-sdbService :: SDBService
-sdbService = SDBService sdb
+wrapAWSService 'sdb "SDBService" "SDBSession"
 
 newtype DomainName = DomainName Text deriving Show
 
