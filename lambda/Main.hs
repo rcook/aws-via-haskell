@@ -86,17 +86,11 @@ wrapAWSService 'lambda "LambdaService" "LambdaSession"
 wrapAWSService 'sts "STSService" "STSSession"
 
 newtype AccountID = AccountID Text deriving Show
-
 newtype ARN = ARN Text deriving (Eq, Show)
-
 newtype FunctionName = FunctionName Text deriving Show
-
 newtype PolicyDocument = PolicyDocument Text deriving Show
-
 newtype RoleName = RoleName Text deriving Show
-
 newtype Handler = Handler Text deriving Show
-
 type Payload = HashMap Text Value
 
 awsLambdaBasicExecutionRolePolicy :: ARN
