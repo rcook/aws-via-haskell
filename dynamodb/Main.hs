@@ -10,16 +10,14 @@
 
 module Main (main) where
 
--- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceTypeName(..)
                     , awsConfig
                     , connect
-                    , declareAWSService
                     , intToText
                     , parseInt
                     , withAWS
+                    , wrapAWSService
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -60,7 +58,7 @@ import           Network.AWS.DynamoDB
                     , updateItem
                     )
 
-declareAWSService (ServiceTypeName "DDBService") "DDBSession" 'dynamoDB
+wrapAWSService 'dynamoDB "DDBService" "DDBSession"
 
 newtype TableName = TableName Text deriving Show
 
