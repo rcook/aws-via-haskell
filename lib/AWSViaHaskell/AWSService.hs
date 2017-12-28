@@ -23,12 +23,11 @@ module AWSViaHaskell.AWSService
     , awscLogging
     , awsConfig
     , connect
-    , sEnv
-    , sRegion
-    , sService
     , withAWS
     ) where
 
+import           AWSViaHaskell.Classes
+import           AWSViaHaskell.Types
 import           Control.Lens ((<&>), makeLenses, set)
 import           Control.Monad.Trans.AWS
                     ( AWST'
@@ -59,13 +58,6 @@ type HostName = ByteString
 
 type Port = Int
 
-data Session = Session
-    { _sEnv :: Env
-    , _sRegion :: Region
-    , _sService :: Service
-    }
-makeLenses ''Session
-
 data Logging = LoggingEnabled | LoggingDisabled
 
 data Endpoint = AWSRegion Region | Local HostName Port
@@ -76,14 +68,6 @@ data AWSConfig = AWSConfig
     , _awscCredentials :: Credentials
     }
 makeLenses ''AWSConfig
-
-class ServiceClass a where
-    type TypedSession a :: *
-    rawService :: a -> Service
-    wrappedSession :: Session -> TypedSession a
-
-class SessionClass a where
-    rawSession :: a -> Session
 
 awsConfig :: Endpoint -> AWSConfig
 awsConfig endpoint = AWSConfig endpoint LoggingDisabled Discover

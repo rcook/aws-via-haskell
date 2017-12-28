@@ -33,6 +33,8 @@ library
                                           , text
   exposed-modules:                          AWSViaHaskell
                                           , AWSViaHaskell.AWSService
+                                          , AWSViaHaskell.Classes
+                                          , AWSViaHaskell.Types
                                           , AWSViaHaskell.Util
 
 executable dynamodb-app
