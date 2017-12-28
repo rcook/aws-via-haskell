@@ -30,35 +30,35 @@ This will generate boilerplate like the following:
     dynamoDBService = DDBService dynamoDB
 -}
 wrapAWSService :: Name -> String -> String -> Q [Dec]
-wrapAWSService varName' typeName sessionTypeName = do
-    rawServiceName' <- newName "x"
-    rawSessionName' <- newName "x"
-    let serviceTypeName' = mkName typeName
-        sessionTypeName' = mkName sessionTypeName
-        wrappedVarName' = mkName $ nameBase varName' ++ "Service"
-        serviceType = DataD [] serviceTypeName' [] Nothing [NormalC serviceTypeName' [(Bang NoSourceUnpackedness NoSourceStrictness, ConT ''Service)]] []
-        sessionType = DataD [] sessionTypeName' [] Nothing [NormalC sessionTypeName' [(Bang NoSourceUnpackedness NoSourceStrictness, ConT ''Session)]] []
-        serviceInstance = InstanceD
-                            Nothing
-                            []
-                            (AppT (ConT ''ServiceClass) (ConT serviceTypeName'))
-                            [ TySynInstD ''TypedSession (TySynEqn [ConT serviceTypeName'] (ConT sessionTypeName'))
-                            , FunD 'rawService [Clause [ConP serviceTypeName' [VarP rawServiceName']] (NormalB (VarE rawServiceName')) []]
-                            , ValD (VarP 'wrappedSession) (NormalB (ConE $ mkName sessionTypeName)) []
-                            ]
-        sessionInstance = InstanceD
-                            Nothing
-                            []
-                            (AppT (ConT ''SessionClass) (ConT sessionTypeName'))
-                            [ FunD 'rawSession [Clause [ConP sessionTypeName' [VarP rawSessionName']] (NormalB (VarE rawSessionName')) []]
-                            ]
-        sig = SigD wrappedVarName' (ConT serviceTypeName')
-        var = ValD (VarP wrappedVarName') (NormalB (AppE (ConE serviceTypeName') (VarE $ varName'))) []
+wrapAWSService varN serviceTypeName sessionTypeName = do
+    serviceVarN <- newName "x"
+    sessionVarN <- newName "x"
+    let serviceN = mkName serviceTypeName
+        sessionN = mkName sessionTypeName
+        wrappedVarN = mkName $ nameBase varN ++ "Service"
+        serviceD = DataD [] serviceN [] Nothing [NormalC serviceN [(Bang NoSourceUnpackedness NoSourceStrictness, ConT ''Service)]] []
+        sessionD = DataD [] sessionN [] Nothing [NormalC sessionN [(Bang NoSourceUnpackedness NoSourceStrictness, ConT ''Session)]] []
+        serviceInst = InstanceD
+                        Nothing
+                        []
+                        (AppT (ConT ''ServiceClass) (ConT serviceN))
+                        [ TySynInstD ''TypedSession (TySynEqn [ConT serviceN] (ConT sessionN))
+                        , FunD 'rawService [Clause [ConP serviceN [VarP serviceVarN]] (NormalB (VarE serviceVarN)) []]
+                        , ValD (VarP 'wrappedSession) (NormalB (ConE $ mkName sessionTypeName)) []
+                        ]
+        sessionInst = InstanceD
+                        Nothing
+                        []
+                        (AppT (ConT ''SessionClass) (ConT sessionN))
+                        [ FunD 'rawSession [Clause [ConP sessionN [VarP sessionVarN]] (NormalB (VarE sessionVarN)) []]
+                        ]
+        sig = SigD wrappedVarN (ConT serviceN)
+        var = ValD (VarP wrappedVarN) (NormalB (AppE (ConE serviceN) (VarE $ varN))) []
     pure
-        [ serviceType
-        , sessionType
-        , serviceInstance
-        , sessionInstance
+        [ serviceD
+        , sessionD
+        , serviceInst
+        , sessionInst
         , sig
         , var
         ]
