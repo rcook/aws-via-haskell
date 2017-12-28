@@ -1,6 +1,14 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell.TH
+Description : Template Haskell helpers for 'AWSViaHaskell'
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+
+This modules provides Template Haskell helper functions for eliminating boilerplate
+-}
 
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -13,23 +21,38 @@ import           AWSViaHaskell.Types
 import           Language.Haskell.TH
 import           Network.AWS (Service)
 
-{-
-Example of top-level invocation:
-    wrapAWSService 'dynamoDB "DDBService" "DDBSession"
-
-This will generate boilerplate like the following:
-    data DDBService = DDBService Service
-    data DDBSession = DDBSession Session
-    instance ServiceClass DDBService where
-        type TypedSession DDBService = DDBSession
-        rawService (DDBService x) = x
-        wrappedSession = DDBSession
-    instance SessionClass DDBSession where
-        rawSession (DDBSession x) = x
-    dynamoDBService :: DDBService
-    dynamoDBService = DDBService dynamoDB
--}
-wrapAWSService :: Name -> String -> String -> Q [Dec]
+-- |Generates type-safe AWS service and session wrappers types for use with
+-- 'AWSViaHaskell.AWSService.connect' and 'AWSViaHaskell.AWSService.withAWS' functions
+--
+-- Example top-level invocation:
+--
+-- @
+-- wrapAWSService \'dynamoDB \"DDBService\" \"DDBSession\"
+-- @
+--
+-- This will generate boilerplate like the following:
+--
+-- @
+-- data DDBService = DDBService Service
+--
+-- data DDBSession = DDBSession Session
+--
+-- instance ServiceClass DDBService where
+--     type TypedSession DDBService = DDBSession
+--     rawService (DDBService x) = x
+--     wrappedSession = DDBSession
+--
+-- instance SessionClass DDBSession where
+--     rawSession (DDBSession x) = x
+--
+-- dynamoDBService :: DDBService
+-- dynamoDBService = DDBService dynamoDB
+-- @
+wrapAWSService ::
+    Name        -- ^ Name of the amazonka 'Network.AWS.Types.Service' value to wrap
+    -> String   -- ^ Name of the service type to generate
+    -> String   -- ^ Name of the session type to generate
+    -> Q [Dec]  -- ^ Declarations for splicing into source file
 wrapAWSService varN serviceTypeName sessionTypeName = do
     serviceVarN <- newName "x"
     sessionVarN <- newName "x"
