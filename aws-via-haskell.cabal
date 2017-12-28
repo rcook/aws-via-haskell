@@ -35,7 +35,7 @@ library
   exposed-modules:                          AWSViaHaskell
                                           , AWSViaHaskell.AWSService
                                           , AWSViaHaskell.Classes
-                                          , AWSViaHaskell.CodeGen
+                                          , AWSViaHaskell.TH
                                           , AWSViaHaskell.Types
                                           , AWSViaHaskell.Util
 

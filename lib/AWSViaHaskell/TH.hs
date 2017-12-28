@@ -4,7 +4,7 @@
 
 {-# LANGUAGE TemplateHaskell #-}
 
-module AWSViaHaskell.CodeGen
+module AWSViaHaskell.TH
     ( wrapAWSService
     ) where
 
