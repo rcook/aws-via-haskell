@@ -4,19 +4,18 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceClass(..)
-                    , SessionClass(..)
-                    , Session
                     , awsConfig
                     , connect
                     , sRegion
                     , withAWS
+                    , wrapAWSService
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -28,7 +27,6 @@ import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
                     ( Region(..)
-                    , Service
                     , await
                     , send
                     , sinkBody
@@ -57,20 +55,7 @@ import           Network.AWS.S3
                     , s3
                     )
 
-data S3Service = S3Service Service
-
-instance ServiceClass S3Service where
-    type TypedSession S3Service = S3Session
-    rawService (S3Service raw) = raw
-    wrappedSession = S3Session
-
-data S3Session = S3Session Session
-
-instance SessionClass S3Session where
-    rawSession (S3Session raw) = raw
-
-s3Service :: S3Service
-s3Service = S3Service s3
+wrapAWSService 's3 "S3Service" "S3Session"
 
 doCreateBucketIfNotExists :: BucketName -> S3Session -> IO ()
 doCreateBucketIfNotExists bucketName s3Session@(S3Session session) = (flip withAWS) s3Session $ do
