@@ -30,10 +30,12 @@ library
                                           , bytestring
                                           , lens
                                           , resourcet
+                                          , template-haskell
                                           , text
   exposed-modules:                          AWSViaHaskell
                                           , AWSViaHaskell.AWSService
                                           , AWSViaHaskell.Classes
+                                          , AWSViaHaskell.CodeGen
                                           , AWSViaHaskell.Types
                                           , AWSViaHaskell.Util
 

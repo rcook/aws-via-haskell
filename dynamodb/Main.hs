@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
@@ -12,11 +13,10 @@ module Main (main) where
 -- All imports are explicit so we can see exactly where each function comes from
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceClass(..)
-                    , SessionClass(..)
-                    , Session
+                    , ServiceTypeName(..)
                     , awsConfig
                     , connect
+                    , declareAWSService
                     , intToText
                     , parseInt
                     , withAWS
@@ -28,8 +28,7 @@ import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import           Network.AWS
-                    ( Service
-                    , await
+                    ( await
                     , send
                     )
 import           Network.AWS.DynamoDB
@@ -61,22 +60,9 @@ import           Network.AWS.DynamoDB
                     , updateItem
                     )
 
-data DDBService = DDBService Service
-
-instance ServiceClass DDBService where
-    type TypedSession DDBService = DDBSession
-    rawService (DDBService raw) = raw
-    wrappedSession = DDBSession
-
-data DDBSession = DDBSession Session
-
-instance SessionClass DDBSession where
-    rawSession (DDBSession raw) = raw
+declareAWSService (ServiceTypeName "DDBService") "DDBSession" 'dynamoDB
 
 newtype TableName = TableName Text deriving Show
-
-ddbService :: DDBService
-ddbService = DDBService dynamoDB
 
 -- Creates a table in DynamoDB and waits until table is in active state
 doCreateTableIfNotExists :: TableName -> DDBSession -> IO ()
@@ -142,7 +128,7 @@ main = do
 
     ddbSession <- connect
                     (awsConfig (Local "localhost" 8000))
-                    ddbService
+                    dynamoDBService
 
     putStrLn "DeleteTableIfExists"
     doDeleteTableIfExists tableName ddbSession
