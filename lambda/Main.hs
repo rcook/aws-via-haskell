@@ -3,19 +3,18 @@
 --------------------------------------------------
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceClass(..)
-                    , Session
-                    , SessionClass(..)
                     , awscCredentials
                     , awsConfig
                     , connect
                     , withAWS
+                    , wrapAWSService
                     )
 import           Codec.Archive.Zip
                     ( addEntryToArchive
@@ -42,7 +41,6 @@ import           Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
 import           Network.AWS
                     ( Credentials(..)
                     , Region(..)
-                    , Service
                     , send
                     )
 import           Network.AWS.IAM
@@ -83,52 +81,9 @@ import           Network.AWS.STS
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
 
--- TODO: Figure out how to reduce the class instance boilerplate!
-
-data IAMService = IAMService Service
-
-instance ServiceClass IAMService where
-    type TypedSession IAMService = IAMSession
-    rawService (IAMService raw) = raw
-    wrappedSession = IAMSession
-
-data IAMSession = IAMSession Session
-
-instance SessionClass IAMSession where
-    rawSession (IAMSession raw) = raw
-
-data STSService = STSService Service
-
-instance ServiceClass STSService where
-    type TypedSession STSService = STSSession
-    rawService (STSService raw) = raw
-    wrappedSession = STSSession
-
-data STSSession = STSSession Session
-
-instance SessionClass STSSession where
-    rawSession (STSSession raw) = raw
-
-data LambdaService = LambdaService Service
-
-instance ServiceClass LambdaService where
-    type TypedSession LambdaService = LambdaSession
-    rawService (LambdaService raw) = raw
-    wrappedSession = LambdaSession
-
-data LambdaSession = LambdaSession Session
-
-instance SessionClass LambdaSession where
-    rawSession (LambdaSession raw) = raw
-
-iamService :: IAMService
-iamService = IAMService iam
-
-stsService :: STSService
-stsService = STSService sts
-
-lambdaService :: LambdaService
-lambdaService = LambdaService lambda
+wrapAWSService 'iam "IAMService" "IAMSession"
+wrapAWSService 'lambda "LambdaService" "LambdaSession"
+wrapAWSService 'sts "STSService" "STSSession"
 
 newtype AccountID = AccountID Text deriving Show
 
