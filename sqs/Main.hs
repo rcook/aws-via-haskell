@@ -3,18 +3,17 @@
 --------------------------------------------------
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Main (main) where
 
 import           AWSViaHaskell
                     ( Endpoint(..)
-                    , ServiceClass(..)
-                    , SessionClass(..)
-                    , Session
                     , awsConfig
                     , connect
                     , withAWS
+                    , wrapAWSService
                     )
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.))
@@ -22,10 +21,7 @@ import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text
-import           Network.AWS
-                    ( Service
-                    , send
-                    )
+import           Network.AWS (send)
 import           Network.AWS.SQS
                     ( _QueueDoesNotExist
                     , createQueue
@@ -40,24 +36,11 @@ import           Network.AWS.SQS
                     , sqs
                     )
 
-data SQSService = SQSService Service
-
-instance ServiceClass SQSService where
-    type TypedSession SQSService = SQSSession
-    rawService (SQSService raw) = raw
-    wrappedSession = SQSSession
-
-data SQSSession = SQSSession Session
-
-instance SessionClass SQSSession where
-    rawSession (SQSSession raw) = raw
+wrapAWSService 'sqs "SQSService" "SQSSession"
 
 newtype QueueName = QueueName Text deriving Show
 
 newtype QueueURL = QueueURL Text deriving Show
-
-sqsService :: SQSService
-sqsService = SQSService sqs
 
 doListQueues :: SQSSession -> IO [Text]
 doListQueues = withAWS $ do
