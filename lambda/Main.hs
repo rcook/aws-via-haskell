@@ -162,8 +162,8 @@ doInvoke (FunctionName fn) payload = withAWS $ do
     result <- send $ invoke fn payload
     return $ result ^. irsPayload
 
-main :: IO ()
-main = do
+awsSession :: FunctionName -> IO (ARN, LambdaSession)
+awsSession fn = do
     homeDir <- getHomeDirectory
     let conf = awsConfig (AWSRegion Ohio)
                 & awscCredentials .~ (FromFile "aws-via-haskell" $ homeDir </> ".aws" </> "credentials")
@@ -184,7 +184,6 @@ main = do
                         \}"
 
     lambdaSession <- connect conf lambdaService
-    let fn = FunctionName "Add"
 
     putStrLn "DeleteFunctionIfExists"
     doDeleteFunctionIfExists fn lambdaSession
@@ -205,6 +204,18 @@ main = do
 
     putStrLn "WaitForRolePolicy"
     waitForRolePolicy roleName awsLambdaBasicExecutionRolePolicy iamSession
+
+    return (arn, lambdaSession)
+
+localStackSession :: IO (ARN, LambdaSession)
+localStackSession = do
+    s <- connect (awsConfig $ Local "localhost" 4574) lambdaService
+    return (ARN "", s)
+
+main :: IO ()
+main = do
+    let fn = FunctionName "Add"
+    (arn, lambdaSession) <- if False then awsSession fn else localStackSession
 
     timestamp <- getPOSIXTime
     let fc = zipFunctionCode "add_handler.py" timestamp "def add_handler(event, context):\n\
