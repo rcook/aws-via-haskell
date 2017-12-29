@@ -1,6 +1,14 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell.Util
+Description : General-purpose helper functions
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+
+This modules provides general-purpose helper functions for the "AWS via Haskell" project.
+-}
 
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}

@@ -1,6 +1,12 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell
+Description : Umbrella module
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+-}
 
 module AWSViaHaskell
     ( module AWSViaHaskell.AWSService

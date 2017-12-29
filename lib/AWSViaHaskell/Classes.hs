@@ -1,6 +1,14 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell.Classes
+Description : Service and session type classes
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+
+This modules provides service and session type classes for the "AWS via Haskell" project.
+-}
 
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeFamilies #-}

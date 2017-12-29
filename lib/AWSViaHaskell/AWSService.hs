@@ -1,6 +1,14 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell.AWSService
+Description : Configuring and making client connections to AWS services
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+
+This modules provides support for configuring and making client connections to AWS services for the "AWS via Haskell" project.
+-}
 
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}

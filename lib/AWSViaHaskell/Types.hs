@@ -1,6 +1,14 @@
---------------------------------------------------
--- Copyright (C) 2017, All rights reserved.
---------------------------------------------------
+{-|
+Module      : AWSViaHaskell.Types
+Description : Support types
+Copyright   : (C) Richard Cook, 2017
+License     : MIT
+Maintainer  : rcook@rcook.org
+Stability   : experimental
+Portability : portable
+
+This modules provides support types for the "AWS via Haskell" project.
+-}
 
 {-# LANGUAGE TemplateHaskell #-}
 
