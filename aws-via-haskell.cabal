@@ -46,6 +46,16 @@ executable dynamodb-app
                                           , text
                                           , unordered-containers
 
+executable ec2-app
+  default-language:                         Haskell2010
+  hs-source-dirs:                           ec2
+  main-is:                                  Main.hs
+  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
+  build-depends:                            amazonka
+                                          , amazonka-ec2
+                                          , aws-via-haskell
+                                          , base >= 4.7 && < 5
+
 executable lambda-app
   default-language:                         Haskell2010
   hs-source-dirs:                           lambda
