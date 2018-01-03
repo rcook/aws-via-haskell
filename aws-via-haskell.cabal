@@ -17,12 +17,6 @@ source-repository head
 
 library
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           lib
   ghc-options:                              -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
   build-depends:                            amazonka
@@ -41,12 +35,6 @@ library
 
 executable dynamodb-app
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           dynamodb
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
@@ -60,12 +48,6 @@ executable dynamodb-app
 
 executable lambda-app
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           lambda
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
@@ -88,12 +70,6 @@ executable lambda-app
 
 executable s3-app
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           s3
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
@@ -109,12 +85,6 @@ executable s3-app
 
 executable sdb-app
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           sdb
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
@@ -127,12 +97,6 @@ executable sdb-app
 
 executable sqs-app
   default-language:                         Haskell2010
-  if os(darwin)
-    cpp-options:                            -DOS_MACOS
-  if os(linux)
-    cpp-options:                            -DOS_LINUX
-  if os(windows)
-    cpp-options:                            -DOS_WINDOWS
   hs-source-dirs:                           sqs
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
