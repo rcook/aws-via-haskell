@@ -109,7 +109,7 @@ doGetAccountID = withAWS $ do
 
 doDeleteFunctionIfExists :: FunctionName -> LambdaSession -> IO ()
 doDeleteFunctionIfExists (FunctionName fn) = withAWS $ do
-    handling (_ResourceNotFoundException) (const (pure ())) $ do
+    handling _ResourceNotFoundException (const (pure ())) $ do
         void $ send $ deleteFunction fn
 
 doDetachRolePolicyIfExists :: RoleName -> ARN -> IAMSession -> IO ()
