@@ -12,6 +12,9 @@ Portability : portable
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ViewPatterns #-}
+
 module Main (main) where
 
 import           AWSViaHaskell
@@ -21,20 +24,46 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
-import           Control.Monad (void)
+import           Control.Exception.Lens (handling)
+import           Control.Monad (forM_, void)
+import           Control.Lens ((^.), Getting)
+import           Data.Monoid ((<>), First)
 import           Data.Text (Text)
+import qualified Data.Text.IO as Text (putStrLn)
 import           Network.AWS
-                    ( Region(..)
+                    ( _ServiceError
+                    , AsError
+                    , Region(..)
+                    , ServiceError
                     , send
                     )
 import           Network.AWS.EC2
-                    ( ec2
+                    ( createSecurityGroup
+                    , describeSecurityGroups
+                    , dsgrsSecurityGroups
+                    , ec2
                     , runInstances
+                    , sgGroupName
                     )
+import           Network.AWS.Error (hasCode, hasStatus)
 
 wrapAWSService 'ec2 "EC2Service" "EC2Session"
 
+newtype GroupName = GroupName Text
 newtype ImageId = ImageId Text deriving Show
+
+doCreateSecurityGroup :: EC2Session -> IO ()
+doCreateSecurityGroup = withAWS $
+    handling _DuplicateGroup (const $ pure ()) $
+        void $ send $ createSecurityGroup "My security group" "MySecurityGroup"
+    where
+        _DuplicateGroup :: AsError a => Getting (First ServiceError) a ServiceError
+        _DuplicateGroup = _ServiceError . hasStatus 400 . hasCode "InvalidGroup.Duplicate"
+
+doDescribeSecurityGroups :: EC2Session -> IO [GroupName]
+doDescribeSecurityGroups = withAWS $ do
+    result <- send $ describeSecurityGroups
+    return [GroupName $ sg ^. sgGroupName | sg <- result ^. dsgrsSecurityGroups ]
 
 doRunInstances :: ImageId -> EC2Session -> IO ()
 doRunInstances (ImageId iid) = withAWS $
@@ -45,6 +74,14 @@ main = do
     ec2Session <- connect
                     (awsConfig (AWSRegion Ohio))
                     ec2Service
+
+    putStrLn "CreateSecurityGroup"
+    doCreateSecurityGroup ec2Session
+
+    putStrLn "DescribeSecurityGroups"
+    groupNames <- doDescribeSecurityGroups ec2Session
+    forM_ groupNames $ \(GroupName groupName) ->
+        Text.putStrLn $ "  " <> groupName
 
     putStrLn "RunInstances"
     let imageId = ImageId "foobar"
