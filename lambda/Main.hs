@@ -22,7 +22,7 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
-import           AWSViaHaskell.AWSPrelude
+import           AWSViaHaskell.Prelude
 import           Codec.Archive.Zip
                     ( addEntryToArchive
                     , emptyArchive

@@ -1,5 +1,5 @@
 {-|
-Module      : AWSViaHaskell.AWSPrelude
+Module      : AWSViaHaskell.Prelude
 Description : Re-exports of most commonly used Amazonka functions
 Copyright   : (C) Richard Cook, 2017
 License     : MIT
@@ -10,7 +10,7 @@ Portability : portable
 This module provides re-exports of most commonly used Amazonka functions.
 -}
 
-module AWSViaHaskell.AWSPrelude
+module AWSViaHaskell.Prelude
     ( _ServiceError
     , AsError
     , Credentials(..)

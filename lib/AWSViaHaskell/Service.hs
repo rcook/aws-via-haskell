@@ -1,5 +1,5 @@
 {-|
-Module      : AWSViaHaskell.AWSService
+Module      : AWSViaHaskell.Service
 Description : Configuring and making client connections to AWS services
 Copyright   : (C) Richard Cook, 2017
 License     : MIT
@@ -19,7 +19,7 @@ This modules provides support for configuring and making client connections to A
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module AWSViaHaskell.AWSService
+module AWSViaHaskell.Service
     ( AWSConfig
     , Endpoint(..)
     , Logging(..)

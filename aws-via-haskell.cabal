@@ -28,9 +28,9 @@ library
                                           , template-haskell
                                           , text
   exposed-modules:                          AWSViaHaskell
-                                          , AWSViaHaskell.AWSPrelude
-                                          , AWSViaHaskell.AWSService
                                           , AWSViaHaskell.Classes
+                                          , AWSViaHaskell.Prelude
+                                          , AWSViaHaskell.Service
                                           , AWSViaHaskell.TH
                                           , AWSViaHaskell.Types
                                           , AWSViaHaskell.Util

@@ -23,7 +23,7 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
-import           AWSViaHaskell.AWSPrelude
+import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)

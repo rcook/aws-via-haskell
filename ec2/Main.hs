@@ -21,7 +21,7 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
-import           AWSViaHaskell.AWSPrelude
+import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
 import           Control.Monad (forM_, void)
 import           Control.Lens ((^.), Getting)
