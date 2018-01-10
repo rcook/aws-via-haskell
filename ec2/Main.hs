@@ -48,8 +48,10 @@ wrapAWSService 'ec2 "EC2Service" "EC2Session"
 newtype GroupName = GroupName Text
 newtype ImageDescription = ImageDescription (Maybe Text)
 newtype ImageId = ImageId Text
+newtype InstanceId = InstanceId Text
 newtype KeyMaterial = KeyMaterial ByteString
 newtype KeyName = KeyName Text
+newtype ReservationId = ReservationId Text
 
 -- Amazon Linux AMI 2017.09.1 (HVM), SSD Volume Type
 freeImageId :: ImageId
@@ -72,31 +74,22 @@ doDescribeKeyPairs = withAWS $ do
     result <- send describeKeyPairs
     return $ catMaybes [ KeyName <$> (keyPair ^. kpiKeyName) | keyPair <- result ^. dkprsKeyPairs ]
 
-doCreateSecurityGroupIfNotExists :: EC2Session -> IO ()
-doCreateSecurityGroupIfNotExists = withAWS $
-    handling _DuplicateGroup (const $ pure ()) $
-        void $ send $ createSecurityGroup "My security group" "MySecurityGroup"
-    where
-        -- [NOTE] Demonstrates how to define a custom error matcher
-        _DuplicateGroup :: AsError a => Getting (First ServiceError) a ServiceError
-        _DuplicateGroup = _ServiceError . hasStatus 400 . hasCode "InvalidGroup.Duplicate"
-
-doDescribeSecurityGroups :: EC2Session -> IO [GroupName]
-doDescribeSecurityGroups = withAWS $ do
-    result <- send $ describeSecurityGroups
-    return [GroupName $ sg ^. sgGroupName | sg <- result ^. dsgrsSecurityGroups ]
-
 doDescribeImages :: [ImageId] -> EC2Session -> IO [(ImageId, ImageDescription)]
 doDescribeImages imageIds = withAWS $ do
     result <- send $ describeImages
                         & deseImageIds .~ map (\(ImageId iid) -> iid) imageIds
     return $ [ (ImageId (i ^. iImageId), ImageDescription (i ^. iDescription)) | i <- result ^. desrsImages ]
 
-doRunInstances :: ImageId -> KeyName -> EC2Session -> IO ()
-doRunInstances (ImageId iid) (KeyName kn) = withAWS $
-    void $ send $ runInstances iid 1 1
-                    & rKeyName .~ Just kn
-                    -- & rSecurityGroups ["default"]
+doRunInstances :: ImageId -> KeyName -> EC2Session -> IO (ReservationId, InstanceId)
+doRunInstances (ImageId iid) (KeyName kn) = withAWS $ do
+    result <- send $ runInstances iid 1 1
+                        & rKeyName .~ Just kn
+                        & rInstanceType .~ Just T2_Micro
+                        -- & rSecurityGroups ["default"]
+    let reservationId = ReservationId (result ^. rReservationId)
+        inst = head $ result ^. rInstances
+        instId = InstanceId (inst ^. insInstanceId)
+    return (reservationId, instId)
 
 main :: IO ()
 main = do
@@ -115,22 +108,14 @@ main = do
     keyNames <- doDescribeKeyPairs ec2Session
     forM_ keyNames $ \(KeyName kn) -> Text.putStrLn $ "  " <> kn
 
-    {-
-    putStrLn "CreateSecurityGroup"
-    doCreateSecurityGroup ec2Session
+    putStrLn "DescribeImages"
+    infos <- doDescribeImages [freeImageId] ec2Session
+    forM_ infos $ \(ImageId imageId, ImageDescription description) ->
+        Text.putStrLn $ "  " <> imageId <> ": " <> fromMaybe "(no description)" description
 
-    putStrLn "DescribeSecurityGroups"
-    groupNames <- doDescribeSecurityGroups ec2Session
-    forM_ groupNames $ \(GroupName groupName) ->
-        Text.putStrLn $ "  " <> groupName
-    -}
-
-    --putStrLn "DescribeImages"
-    --infos <- doDescribeImages [freeImageId] ec2Session
-    --forM_ infos $ \(ImageId imageId, ImageDescription description) ->
-    --    Text.putStrLn $ "  " <> imageId <> ": " <> fromMaybe "(no description)" description
-
-    --putStrLn "RunInstances"
-    --doRunInstances freeImageId keyName ec2Session
+    putStrLn "RunInstances"
+    (ReservationId rid, InstanceId instId) <- doRunInstances freeImageId keyName ec2Session
+    Text.putStrLn $ "  Reservation ID: " <> rid
+    Text.putStrLn $ "  Instance ID: " <> instId
 
     putStrLn "Done"
