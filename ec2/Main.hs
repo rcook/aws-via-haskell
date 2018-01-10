@@ -12,9 +12,6 @@ Portability : portable
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
-
 module Main (main) where
 
 import           AWSViaHaskell
