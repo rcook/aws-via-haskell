@@ -23,6 +23,7 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
+import           AWSViaHaskell.AWSPrelude
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)
@@ -31,13 +32,6 @@ import qualified Data.ByteString.Lazy.Char8 as ByteString
 import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
-import           Network.AWS
-                    ( Region(..)
-                    , await
-                    , send
-                    , sinkBody
-                    )
-import           Network.AWS.Data (toText)
 import           Network.AWS.S3
                     ( _BucketAlreadyOwnedByYou
                     , BucketName(..)

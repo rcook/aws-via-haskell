@@ -25,16 +25,13 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
+import           AWSViaHaskell.AWSPrelude
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
-import           Network.AWS
-                    ( await
-                    , send
-                    )
 import           Network.AWS.DynamoDB
                     ( _ResourceInUseException
                     , _ResourceNotFoundException

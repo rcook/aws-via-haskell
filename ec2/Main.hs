@@ -21,19 +21,13 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
+import           AWSViaHaskell.AWSPrelude
 import           Control.Exception.Lens (handling)
 import           Control.Monad (forM_, void)
 import           Control.Lens ((^.), Getting)
 import           Data.Monoid ((<>), First)
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text (putStrLn)
-import           Network.AWS
-                    ( _ServiceError
-                    , AsError
-                    , Region(..)
-                    , ServiceError
-                    , send
-                    )
 import           Network.AWS.EC2
                     ( createSecurityGroup
                     , describeSecurityGroups
@@ -42,7 +36,6 @@ import           Network.AWS.EC2
                     , runInstances
                     , sgGroupName
                     )
-import           Network.AWS.Error (hasCode, hasStatus)
 
 wrapAWSService 'ec2 "EC2Service" "EC2Session"
 

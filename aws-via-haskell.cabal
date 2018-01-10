@@ -20,6 +20,7 @@ library
   hs-source-dirs:                           lib
   ghc-options:                              -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
   build-depends:                            amazonka
+                                          , amazonka-core
                                           , base >= 4.7 && < 5
                                           , bytestring
                                           , lens
@@ -27,6 +28,7 @@ library
                                           , template-haskell
                                           , text
   exposed-modules:                          AWSViaHaskell
+                                          , AWSViaHaskell.AWSPrelude
                                           , AWSViaHaskell.AWSService
                                           , AWSViaHaskell.Classes
                                           , AWSViaHaskell.TH
@@ -38,8 +40,7 @@ executable dynamodb-app
   hs-source-dirs:                           dynamodb
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            amazonka
-                                          , amazonka-dynamodb
+  build-depends:                            amazonka-dynamodb
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , lens
@@ -51,9 +52,7 @@ executable ec2-app
   hs-source-dirs:                           ec2
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            amazonka
-                                          , amazonka-core
-                                          , amazonka-ec2
+  build-depends:                            amazonka-ec2
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , lens
@@ -65,7 +64,6 @@ executable lambda-app
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
   build-depends:                            aeson
-                                          , amazonka
                                           , amazonka-iam
                                           , amazonka-lambda
                                           , amazonka-sts
@@ -86,8 +84,7 @@ executable s3-app
   hs-source-dirs:                           s3
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            amazonka
-                                          , amazonka-s3
+  build-depends:                            amazonka-s3
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , bytestring
@@ -101,8 +98,7 @@ executable sdb-app
   hs-source-dirs:                           sdb
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            amazonka
-                                          , amazonka-sdb
+  build-depends:                            amazonka-sdb
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , lens
@@ -113,8 +109,7 @@ executable sqs-app
   hs-source-dirs:                           sqs
   main-is:                                  Main.hs
   ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
-  build-depends:                            amazonka
-                                          , amazonka-sqs
+  build-depends:                            amazonka-sqs
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
                                           , lens

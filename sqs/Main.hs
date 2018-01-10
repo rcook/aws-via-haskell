@@ -21,13 +21,13 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
+import           AWSViaHaskell.AWSPrelude
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.))
 import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as Text
-import           Network.AWS (send)
 import           Network.AWS.SQS
                     ( _QueueDoesNotExist
                     , createQueue

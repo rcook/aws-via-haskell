@@ -22,6 +22,7 @@ import           AWSViaHaskell
                     , withAWS
                     , wrapAWSService
                     )
+import           AWSViaHaskell.AWSPrelude
 import           Codec.Archive.Zip
                     ( addEntryToArchive
                     , emptyArchive
@@ -44,11 +45,6 @@ import           Data.Text.Format (format)
 import qualified Data.Text.Lazy as Text (toStrict)
 import qualified Data.Text.IO as Text (putStrLn)
 import           Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
-import           Network.AWS
-                    ( Credentials(..)
-                    , Region(..)
-                    , send
-                    )
 import           Network.AWS.IAM
                     ( _EntityAlreadyExistsException
                     , _NoSuchEntityException
