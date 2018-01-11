@@ -14,13 +14,7 @@ Portability : portable
 
 module Main (main) where
 
-import           AWSViaHaskell
-                    ( Endpoint(..)
-                    , awsConfig
-                    , connect
-                    , withAWS
-                    , wrapAWSService
-                    )
+import           AWSViaHaskell (Endpoint(..), awsConfig, connect, withAWS, wrapAWSService)
 import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
 import           Control.Monad (forM_, void)
@@ -32,48 +26,7 @@ import           Data.Monoid ((<>), First)
 import           Data.Text (Text)
 import qualified Data.Text as Text (pack)
 import qualified Data.Text.IO as Text (putStrLn)
-import           Network.AWS.EC2
-                    ( InstanceType(..)
-                    , asgiGroupId
-                    , asgiIPPermissions
-                    , authorizeSecurityGroupIngress
-                    , createSecurityGroup
-                    , csgrsGroupId
-                    , describeImages
-                    , describeInstances
-                    , describeInstanceStatus
-                    , describeKeyPairs
-                    , describeSecurityGroups
-                    , deseImageIds
-                    , desrsImages
-                    , diiInstanceIds
-                    , dirsReservations
-                    , disInstanceIds
-                    , dkprsKeyPairs
-                    , dsgrsSecurityGroups
-                    , dsgsGroupNames
-                    , ec2
-                    , iDescription
-                    , iImageId
-                    , importKeyPair
-                    , insInstanceId
-                    , insPublicDNSName
-                    , instanceRunning
-                    , instanceStatusOK
-                    , ipFromPort
-                    , ipIPRanges
-                    , ipPermission
-                    , ipRange
-                    , ipToPort
-                    , kpiKeyName
-                    , rInstanceType
-                    , rInstances
-                    , rKeyName
-                    , rReservationId
-                    , rSecurityGroupIds
-                    , runInstances
-                    , sgGroupId
-                    )
+import           EC2Imports
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
 
