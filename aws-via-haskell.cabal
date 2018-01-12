@@ -43,6 +43,8 @@ executable dynamodb-app
   build-depends:                            amazonka-dynamodb
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
+                                          , directory
+                                          , filepath
                                           , lens
                                           , text
                                           , unordered-containers

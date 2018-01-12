@@ -25,6 +25,8 @@ import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
 import           DynamoDBImports
+import           System.Directory (getHomeDirectory)
+import           System.FilePath ((</>))
 
 wrapAWSService 'dynamoDB "DDBService" "DDBSession"
 
@@ -92,9 +94,11 @@ main :: IO ()
 main = do
     let tableName = TableName "table"
 
-    ddbSession <- connect
-                    (awsConfig (Local "localhost" 8000))
-                    dynamoDBService
+    homeDir <- getHomeDirectory
+    let conf = awsConfig (AWSRegion Ohio)
+                & awscCredentials .~ (FromFile "test-creds" $ homeDir </> ".aws" </> "credentials")
+
+    ddbSession <- connect conf dynamoDBService
 
     putStrLn "DeleteTableIfExists"
     doDeleteTableIfExists tableName ddbSession
