@@ -9,7 +9,9 @@ Portability : portable
 -}
 
 module RDSImports
-    ( cdiMasterUserPassword
+    ( cdiAllocatedStorage
+    , cdiMasterUserPassword
+    , cdiMasterUsername
     , cdirsDBInstance
     , createDBInstance
     , diDBInstanceARN
