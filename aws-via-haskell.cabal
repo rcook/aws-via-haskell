@@ -46,6 +46,7 @@ executable dynamodb-app
                                           , lens
                                           , text
                                           , unordered-containers
+  other-modules:                            DynamoDBImports
 
 executable ec2-app
   default-language:                         Haskell2010

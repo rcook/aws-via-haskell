@@ -17,14 +17,6 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Endpoint(..)
-                    , awsConfig
-                    , connect
-                    , intToText
-                    , parseInt
-                    , withAWS
-                    , wrapAWSService
-                    )
 import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
 import           Control.Lens ((^.), (.~), (&))
@@ -32,34 +24,7 @@ import           Control.Monad (void, when)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Text (Text)
-import           Network.AWS.DynamoDB
-                    ( _ResourceInUseException
-                    , _ResourceNotFoundException
-                    , KeyType(..)
-                    , ScalarAttributeType(..)
-                    , attributeDefinition
-                    , attributeValue
-                    , avN
-                    , avS
-                    , createTable
-                    , ctAttributeDefinitions
-                    , deleteTable
-                    , describeTable
-                    , dynamoDB
-                    , getItem
-                    , giKey
-                    , girsItem
-                    , keySchemaElement
-                    , piItem
-                    , provisionedThroughput
-                    , putItem
-                    , tableExists
-                    , tableNotExists
-                    , uiExpressionAttributeValues
-                    , uiKey
-                    , uiUpdateExpression
-                    , updateItem
-                    )
+import           DynamoDBImports
 
 wrapAWSService 'dynamoDB "DDBService" "DDBSession"
 
