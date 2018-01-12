@@ -43,8 +43,8 @@ newtype KeyName = KeyName Text
 newtype ReservationId = ReservationId Text
 
 -- Amazon Linux AMI 2017.09.1 (HVM), SSD Volume Type
-freeImageId :: ImageId
-freeImageId = ImageId "ami-caaf84af"
+freeTierImageId :: ImageId
+freeTierImageId = ImageId "ami-caaf84af"
 
 mySecurityGroupName :: GroupName
 mySecurityGroupName = GroupName "my-security-group"
@@ -151,12 +151,12 @@ main = do
     Text.putStrLn $ "  " <> gid
 
     putStrLn "DescribeImages"
-    infos <- doDescribeImages [freeImageId] ec2Session
+    infos <- doDescribeImages [freeTierImageId] ec2Session
     forM_ infos $ \(ImageId imageId, ImageDescription description) ->
         Text.putStrLn $ "  " <> imageId <> ": " <> fromMaybe "(no description)" description
 
     putStrLn "RunInstances"
-    (ReservationId rid, instId@(InstanceId iid)) <- doRunInstance freeImageId keyName groupId ec2Session
+    (ReservationId rid, instId@(InstanceId iid)) <- doRunInstance freeTierImageId keyName groupId ec2Session
     Text.putStrLn $ "  Reservation ID: " <> rid
     Text.putStrLn $ "  Instance ID: " <> iid
 
