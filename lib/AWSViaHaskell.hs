@@ -10,6 +10,7 @@ Portability : portable
 
 module AWSViaHaskell
     ( module AWSViaHaskell.Classes
+    , module AWSViaHaskell.Prelude
     , module AWSViaHaskell.Service
     , module AWSViaHaskell.TH
     , module AWSViaHaskell.Types
@@ -17,6 +18,7 @@ module AWSViaHaskell
     ) where
 
 import           AWSViaHaskell.Classes
+import           AWSViaHaskell.Prelude
 import           AWSViaHaskell.Service
 import           AWSViaHaskell.TH
 import           AWSViaHaskell.Types

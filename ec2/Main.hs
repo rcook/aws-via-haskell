@@ -14,11 +14,10 @@ Portability : portable
 
 module Main (main) where
 
-import           AWSViaHaskell (Endpoint(..), awsConfig, connect, withAWS, wrapAWSService)
-import           AWSViaHaskell.Prelude
+import           AWSViaHaskell
 import           Control.Exception.Lens (handling)
+import           Control.Lens (Getting)
 import           Control.Monad (forM_, void)
-import           Control.Lens ((^.), (&), (.~), Getting)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (readFile)
 import           Data.Maybe (catMaybes, fromMaybe)

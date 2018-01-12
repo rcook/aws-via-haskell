@@ -7,11 +7,14 @@ Maintainer  : rcook@rcook.org
 Stability   : experimental
 Portability : portable
 
-This module provides re-exports of most commonly used Amazonka functions.
+This module provides re-exports of most commonly used Amazonka functions as well as lens and error-handling functions.
 -}
 
 module AWSViaHaskell.Prelude
-    ( _ServiceError
+    ( (^.)
+    , (&)
+    , (.~)
+    , _ServiceError
     , AsError
     , Credentials(..)
     , Region(..)
@@ -24,6 +27,7 @@ module AWSViaHaskell.Prelude
     , toText
     ) where
 
+import           Control.Lens ((^.), (&), (.~))
 import           Network.AWS
                     ( _ServiceError
                     , AsError

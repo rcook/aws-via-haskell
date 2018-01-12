@@ -9,7 +9,15 @@ Portability : portable
 -}
 
 module RDSImports
-    ( rds
+    ( cdiMasterUserPassword
+    , cdirsDBInstance
+    , createDBInstance
+    , diDBInstanceARN
+    , diEndpoint
+    , diEngineVersion
+    , eAddress
+    , ePort
+    , rds
     ) where
 
 import Network.AWS.RDS

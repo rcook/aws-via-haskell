@@ -15,14 +15,6 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Endpoint(..)
-                    , awscCredentials
-                    , awsConfig
-                    , connect
-                    , withAWS
-                    , wrapAWSService
-                    )
-import           AWSViaHaskell.Prelude
 import           Codec.Archive.Zip
                     ( addEntryToArchive
                     , emptyArchive
@@ -31,7 +23,6 @@ import           Codec.Archive.Zip
                     )
 import           Control.Concurrent (threadDelay)
 import           Control.Exception.Lens (handling)
-import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void)
 import           Data.Aeson (Value(..))
 import           Data.ByteString.Lazy (ByteString)

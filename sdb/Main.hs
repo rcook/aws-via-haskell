@@ -15,14 +15,6 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Endpoint(..)
-                    , awsConfig
-                    , connect
-                    , withAWS
-                    , wrapAWSService
-                    )
-import           AWSViaHaskell.Prelude
-import           Control.Lens ((&), (^.), (.~))
 import           Control.Monad (forM_, void)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)

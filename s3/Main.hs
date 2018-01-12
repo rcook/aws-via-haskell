@@ -16,16 +16,7 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
-                    ( Endpoint(..)
-                    , awsConfig
-                    , connect
-                    , sRegion
-                    , withAWS
-                    , wrapAWSService
-                    )
-import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
-import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (forM_, void, when)
 import           Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as ByteString

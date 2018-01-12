@@ -17,9 +17,7 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
-import           AWSViaHaskell.Prelude
 import           Control.Exception.Lens (handling)
-import           Control.Lens ((^.), (.~), (&))
 import           Control.Monad (void, when)
 import qualified Data.HashMap.Strict as HashMap (fromList, lookup)
 import           Data.List.NonEmpty (NonEmpty(..))
