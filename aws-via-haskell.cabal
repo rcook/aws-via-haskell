@@ -136,3 +136,13 @@ executable sqs-app
                                           , base >= 4.7 && < 5
                                           , lens
                                           , text
+
+executable ssm-app
+  default-language:                         Haskell2010
+  hs-source-dirs:                           ssm
+  main-is:                                  Main.hs
+  ghc-options:                              -threaded -rtsopts -with-rtsopts=-N -W -Wall -fwarn-incomplete-patterns -fwarn-unused-imports
+  build-depends:                            amazonka-ssm
+                                          , aws-via-haskell
+                                          , base >= 4.7 && < 5
+  other-modules:                            SSMImports
