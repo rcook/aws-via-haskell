@@ -145,4 +145,7 @@ executable ssm-app
   build-depends:                            amazonka-ssm
                                           , aws-via-haskell
                                           , base >= 4.7 && < 5
+                                          , directory
+                                          , filepath
+                                          , text
   other-modules:                            SSMImports

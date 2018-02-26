@@ -9,7 +9,10 @@ Portability : portable
 -}
 
 module SSMImports
-    ( ssm
+    ( getParameters
+    , gprsParameters
+    , pValue
+    , ssm
     ) where
 
 import Network.AWS.SSM
