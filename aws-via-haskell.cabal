@@ -114,6 +114,7 @@ executable s3-app
                                           , lens
                                           , resourcet
                                           , text
+  other-modules:                            S3Imports
 
 executable sdb-app
   default-language:                         Haskell2010

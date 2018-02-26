@@ -23,28 +23,7 @@ import qualified Data.ByteString.Lazy.Char8 as ByteString
 import           Data.Conduit.Binary (sinkLbs)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as Text (putStrLn)
-import           Network.AWS.S3
-                    ( _BucketAlreadyOwnedByYou
-                    , BucketName(..)
-                    , LocationConstraint(..)
-                    , ObjectKey(..)
-                    , bucketExists
-                    , cbCreateBucketConfiguration
-                    , cbcLocationConstraint
-                    , createBucketConfiguration
-                    , bName
-                    , createBucket
-                    , getObject
-                    , gorsBody
-                    , headBucket
-                    , lbrsBuckets
-                    , listBuckets
-                    , listObjectsV
-                    , lrsContents
-                    , oKey
-                    , putObject
-                    , s3
-                    )
+import           S3Imports
 
 wrapAWSService 's3 "S3Service" "S3Session"
 
@@ -69,8 +48,8 @@ doPutObject bucketName = withAWS $ do
 
 doListObjects :: BucketName -> S3Session -> IO [ObjectKey]
 doListObjects bucketName = withAWS $ do
-    result <- send $ listObjectsV bucketName
-    return $ [ x ^. oKey | x <- result ^. lrsContents ]
+    result <- send $ listObjectsV2 bucketName
+    return $ [ x ^. oKey | x <- result ^. lovrsContents ]
 
 doGetObject :: BucketName -> S3Session -> IO ByteString
 doGetObject bucketName = withAWS $ do
