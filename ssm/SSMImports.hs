@@ -10,7 +10,7 @@ Portability : portable
 
 module SSMImports
     ( getParameters
-    , gprsParameters
+    , grsParameters
     , pValue
     , ssm
     ) where

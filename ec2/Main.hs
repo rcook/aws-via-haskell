@@ -96,7 +96,7 @@ doDescribeImages :: [ImageId] -> EC2Session -> IO [(ImageId, ImageDescription)]
 doDescribeImages imageIds = withAWS $ do
     result <- send $ describeImages
                         & deseImageIds .~ map (\(ImageId iid) -> iid) imageIds
-    return $ [ (ImageId (i ^. iImageId), ImageDescription (i ^. iDescription)) | i <- result ^. desrsImages ]
+    return $ [ (ImageId (i ^. iImageId), ImageDescription (i ^. iDescription)) | i <- result ^. diirsImages  ]
 
 -- [NOTE] Run instance with default security group which should enable inbound ssh
 doRunInstance :: ImageId -> KeyName -> GroupId -> EC2Session -> IO (ReservationId, InstanceId)
