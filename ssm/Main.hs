@@ -15,9 +15,12 @@ Portability : portable
 module Main (main) where
 
 import           AWSViaHaskell
+import           Control.Monad (void)
 import qualified Data.List.NonEmpty as NonEmpty (fromList)
 import           Data.Maybe (fromJust)
+import           Data.Monoid ((<>))
 import           Data.Text (Text)
+import qualified Data.Text.IO as Text (putStrLn)
 import           SSMImports
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
@@ -26,10 +29,17 @@ wrapAWSService 'ssm "SSMService" "SSMSession"
 
 newtype ParameterName = ParameterName Text
 
-doGetParameter :: ParameterName -> SSMSession -> IO Text
+newtype ParameterValue = ParameterValue Text
+
+doGetParameter :: ParameterName -> SSMSession -> IO (Text, Integer)
 doGetParameter (ParameterName pn) = withAWS $ do
     result <- send $ getParameters (NonEmpty.fromList [pn])
-    return $ fromJust ((head $ result ^. grsParameters) ^. pValue)
+    let param = head $ result ^. grsParameters
+    return $ (fromJust (param ^. pValue), fromJust (param ^. pVersion))
+
+doPutParameter :: ParameterName -> ParameterValue -> SSMSession -> IO ()
+doPutParameter (ParameterName pn) (ParameterValue pv) = withAWS $
+    void (send $ putParameter pn pv String & ppOverwrite .~ Just True)
 
 main :: IO ()
 main = do
@@ -39,7 +49,12 @@ main = do
 
     ssmSession <- connect conf ssmService
 
-    value <- doGetParameter (ParameterName "/ViaHaskell/ExampleParameter") ssmSession
-    print value
+    putStrLn "doPutParameter"
+    doPutParameter (ParameterName "/AAA/BBB") (ParameterValue "CCC") ssmSession
+
+    putStrLn "doGetParameter"
+    (value, version) <- doGetParameter (ParameterName "/AAA/BBB") ssmSession
+    Text.putStrLn $ "Value: " <> value
+    putStrLn $ "Version: " ++ show version
 
     putStrLn "Done"

@@ -9,9 +9,13 @@ Portability : portable
 -}
 
 module SSMImports
-    ( getParameters
+    ( ParameterType(..)
+    , getParameters
     , grsParameters
     , pValue
+    , pVersion
+    , ppOverwrite
+    , putParameter
     , ssm
     ) where
 
