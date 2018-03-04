@@ -36,6 +36,7 @@ import           Data.Text.Format (format)
 import qualified Data.Text.Lazy as Text (toStrict)
 import qualified Data.Text.IO as Text (putStrLn)
 import           Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime)
+import           LambdaImports
 import           Network.AWS.IAM
                     ( _EntityAlreadyExistsException
                     , _NoSuchEntityException
@@ -49,22 +50,6 @@ import           Network.AWS.IAM
                     , larprsAttachedPolicies
                     , listAttachedRolePolicies
                     , rARN
-                    )
-import           Network.AWS.Lambda
-                    ( _ResourceConflictException
-                    , _ResourceNotFoundException
-                    , FunctionCode
-                    , Runtime(..)
-                    , createFunction
-                    , deleteFunction
-                    , fcFunctionName
-                    , fcZipFile
-                    , functionCode
-                    , invoke
-                    , irsPayload
-                    , lambda
-                    , listFunctions
-                    , lfrsFunctions
                     )
 import           Network.AWS.STS
                     ( gcirsAccount
