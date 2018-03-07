@@ -22,10 +22,9 @@ This modules provides support for configuring and making client connections to A
 module AWSViaHaskell.Service
     ( AWSConfig
     , Endpoint(..)
+    , HostName
     , Logging(..)
-    , ServiceClass(..)
-    , Session
-    , SessionClass(..)
+    , Port
     , awscCredentials
     , awscEndpoint
     , awscLogging
