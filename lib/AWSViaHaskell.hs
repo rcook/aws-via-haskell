@@ -9,17 +9,7 @@ Portability : portable
 -}
 
 module AWSViaHaskell
-    ( module AWSViaHaskell.Classes
-    , module AWSViaHaskell.Prelude
-    , module AWSViaHaskell.Service
-    , module AWSViaHaskell.TH
-    , module AWSViaHaskell.Types
-    , module AWSViaHaskell.Util
+    ( module Network.AWS.Simple
     ) where
 
-import           AWSViaHaskell.Classes
-import           AWSViaHaskell.Prelude
-import           AWSViaHaskell.Service
-import           AWSViaHaskell.TH
-import           AWSViaHaskell.Types
-import           AWSViaHaskell.Util
+import           Network.AWS.Simple

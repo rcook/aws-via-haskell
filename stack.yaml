@@ -1,5 +1,7 @@
 resolver: lts-9.14
 extra-deps:
+- git: https://github.com/rcook/aws-simple.git
+  commit: ac63c070227dbcd28a35942285514d029cff2d6d
 - amazonka-1.5.0
 - amazonka-core-1.5.0
 - amazonka-dynamodb-1.5.0
