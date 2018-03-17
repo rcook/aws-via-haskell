@@ -9,7 +9,7 @@ Portability : portable
 -}
 
 module AWSViaHaskell
-    ( module Network.AWS.Simple
+    ( module Network.AWS.Easy
     ) where
 
-import           Network.AWS.Simple
+import           Network.AWS.Easy
